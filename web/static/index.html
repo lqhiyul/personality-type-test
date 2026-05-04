@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Тест MBTI та типи особистості</title>
+  <meta name="description" content="28 запитань, результат за MBTI, короткий breakdown і каталог усіх 16 типів." />
+  <meta name="theme-color" content="#070810" />
+  <meta property="og:title" content="Тест MBTI та типи особистості" />
+  <meta property="og:description" content="28 запитань, результат за MBTI, короткий breakdown і каталог усіх 16 типів." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <a class="skip-link" id="skipLink" href="#quizSection">Перейти до тесту</a>
+
+  <div class="bg" aria-hidden="true"></div>
+
+  <main class="page">
+    <div class="top-nav">
+      <nav class="tabs-nav" role="tablist" aria-label="Основні розділи">
+        <button id="tabQuiz" class="tab-btn active" type="button" role="tab" aria-selected="true" aria-controls="quizSection">Тест</button>
+        <button id="tabTypes" class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="typesSection">Типи</button>
+        <button id="tabCompatibility" class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="compatibilitySection">Сумісність</button>
+      </nav>
+
+      <div class="language-switcher" id="languageSwitcher" role="group" aria-label="Мова інтерфейсу">
+        <button type="button" data-lang="uk" aria-pressed="true">UA</button>
+        <button type="button" data-lang="ru" aria-pressed="false">RU</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+
+    <button type="button" class="admin-access-btn" id="adminAccessBtn" aria-expanded="false" aria-controls="adminAccessPopover adminCard" aria-label="Відкрити адміністративні інструменти">
+      <span aria-hidden="true">QA</span>
+    </button>
+    <div class="admin-access-popover" id="adminAccessPopover" role="dialog" aria-modal="false" aria-labelledby="adminAccessTitle" hidden>
+      <div class="admin-access-popover__eyebrow" id="adminAccessTitle">Admin tools</div>
+      <p class="admin-access-popover__copy" id="adminAccessHint">Local QA and exports.</p>
+      <button type="button" class="admin-access-popover__action" id="adminOpenBtn">Open panel</button>
+    </div>
+
+    <header class="hero" id="quizHero">
+      <div class="eyebrow" id="quizEyebrow">Тест MBTI</div>
+      <h1 id="quizTitle">Тест на тип особистості</h1>
+      <p id="quizCopy">28 запитань за системою MBTI й гуманітарною соціонікою.</p>
+    </header>
+
+    <header class="hero" id="typesHero" hidden>
+      <div class="eyebrow" id="typesEyebrow">16 типів</div>
+      <h1 id="typesTitle">Типи особистості за MBTI</h1>
+      <p id="typesCopy">Каталог усіх типів із фільтрами та детальними описами.</p>
+    </header>
+
+    <header class="hero" id="compatibilityHero" hidden>
+      <div class="eyebrow" id="compatibilityEyebrow">Динаміка взаємодії</div>
+      <h1 id="compatibilityTitle">Сумісність типів</h1>
+      <p id="compatibilityCopy">Порівняйте два типи в дружбі, стосунках або роботі як спокійну гіпотезу про взаємодію, не як вирок.</p>
+    </header>
+
+    <section class="layout" id="quizSection" role="tabpanel" aria-labelledby="tabQuiz">
+      <article class="card quiz-card">
+        <div class="progress">
+          <div class="progress-top">
+            <div>
+              <div class="progress-label" id="progressLabel">Відповідей: 0 / 28</div>
+              <div class="progress-subtitle" id="progressSubtitle">Кожна відповідь м’яко підсвічує прогрес</div>
+            </div>
+            <div class="progress-pill" id="progressPercent">0%</div>
+          </div>
+          <div class="bar" aria-hidden="true"><div id="barFill"></div></div>
+        </div>
+
+        <div class="meta" aria-label="Статистика проходження">
+          <div class="metric"><span id="metricQuestionsLabel">Питань</span><strong id="questionTotal">28</strong></div>
+          <div class="metric"><span id="metricDoneLabel">Заповнено</span><strong id="doneCount">0</strong></div>
+          <div class="metric"><span id="metricLeftLabel">Залишилось</span><strong id="leftCount">28</strong></div>
+        </div>
+
+        <div class="field">
+          <label id="personNameLabel" for="personName">Ваше ім'я</label>
+          <input id="personName" type="text" placeholder="Введіть ім'я" autocomplete="name" maxlength="64" />
+        </div>
+
+        <form id="quizForm" class="questions" aria-label="Питання тесту"></form>
+
+        <div class="actions">
+          <button type="button" class="btn primary" id="submitBtn">Показати результат</button>
+          <button type="button" class="btn ghost" id="resetBtn">Очистити</button>
+        </div>
+
+        <section class="result hidden" id="resultBox" aria-live="polite" aria-label="Результат тесту">
+          <div class="result-head">
+            <div class="result-badge" id="resultType">—</div>
+            <div>
+              <h2 id="resultTitle">Результат з'явиться тут</h2>
+              <p id="resultDesc">Заповніть усі питання.</p>
+            </div>
+          </div>
+          <div class="result-panel" id="resultPanel"></div>
+        </section>
+      </article>
+
+      <aside id="adminCard" class="card admin-card" aria-labelledby="adminTitle" hidden>
+        <h2 class="admin-title" id="adminTitle">Адміністратор</h2>
+        <p class="admin-copy" id="adminCopy">Локальна панель для перегляду, пошуку, експорту й очищення результатів.</p>
+
+        <div class="admin-login">
+          <label class="sr-only" for="adminPassword">Пароль адміністратора</label>
+          <input id="adminPassword" type="password" placeholder="Пароль" autocomplete="current-password" />
+          <button type="button" class="btn primary" id="loginBtn">Увійти</button>
+        </div>
+        <div id="adminNotice" class="soft-notice" role="status" aria-live="polite"></div>
+
+        <div class="admin-hidden" id="adminPanel">
+          <div class="admin-stats">
+            <div>
+              <div class="admin-stats__label" id="adminStatsLabel">Результатів</div>
+              <div class="admin-stats__count" id="statsCounter">0</div>
+            </div>
+            <div class="admin-toolbar">
+              <button type="button" class="btn ghost btn-compact" id="exportBtn">Експорт CSV</button>
+              <button type="button" class="btn ghost btn-compact" id="exportJsonBtn">Експорт JSON</button>
+              <button type="button" class="btn ghost btn-compact" id="logoutBtn">Вийти</button>
+            </div>
+          </div>
+
+          <section class="admin-demo" aria-labelledby="adminDemoTitle">
+            <div class="admin-demo__head">
+              <h3 id="adminDemoTitle">Demo run</h3>
+              <p id="adminDemoCopy">Швидко показує result page для обраного типу без запису в статистику.</p>
+            </div>
+            <div class="admin-demo__grid">
+              <div class="field admin-demo__field">
+                <label id="demoTypeLabel" for="demoTypeSelect">Тип</label>
+                <select id="demoTypeSelect"></select>
+              </div>
+              <div class="field admin-demo__field">
+                <label id="demoNameLabel" for="demoName">Ім'я для demo</label>
+                <input id="demoName" type="text" placeholder="Demo INTJ" autocomplete="off" maxlength="64" />
+              </div>
+            </div>
+            <div class="admin-demo__actions">
+              <button type="button" class="btn primary btn-compact" id="demoRunBtn">Автопройти тест</button>
+              <button type="button" class="btn ghost btn-compact" id="demoCancelBtn" hidden>Скасувати</button>
+            </div>
+            <div class="admin-demo__state" id="demoState" role="status" aria-live="polite"></div>
+          </section>
+
+          <div class="field admin-search">
+            <label id="adminSearchLabel" for="adminSearch">Пошук</label>
+            <input id="adminSearch" type="text" placeholder="Ім'я, тип або ID" autocomplete="off" />
+          </div>
+
+          <div id="adminState" class="admin-state" role="status" aria-live="polite" hidden></div>
+
+          <div class="actions admin-actions">
+            <button type="button" class="btn danger btn-compact" id="clearBtn">Очистити все</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th id="thName">Ім'я</th><th id="thType">Тип</th><th id="thDate">Дата</th><th id="thAction">Дія</th></tr>
+              </thead>
+              <tbody id="resultsTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section id="typesSection" class="types-section" role="tabpanel" aria-labelledby="tabTypes" hidden></section>
+
+    <section id="compatibilitySection" class="compatibility-section" role="tabpanel" aria-labelledby="tabCompatibility" hidden></section>
+
+    <section class="trust-note" id="trustNote" aria-label="Privacy and disclaimer"></section>
+    <footer class="footer" id="footerText"></footer>
+  </main>
+
+  <script src="types-data.js"></script>
+  <script src="content-uk.js"></script>
+  <script src="content-ru.js"></script>
+  <script src="content-en.js"></script>
+  <script src="content-author.js"></script>
+  <script src="content-profiles-uk.js"></script>
+  <script src="content-profiles-ru.js"></script>
+  <script src="content-profiles-en.js"></script>
+  <script src="result-insights.js"></script>
+  <script src="compatibility-engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "files.exclude": {
+    "**/.codex-run": true,
+    "**/.claude": true,
+    "**/data": true,
+    "**/*.exe": true
+  },
+  "search.exclude": {
+    "**/.codex-run": true,
+    "**/.claude": true,
+    "**/data": true
+  }
+}

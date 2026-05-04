@@ -1,0 +1,30 @@
+# Build output
+*.exe
+*.out
+*.test
+coverage.out
+
+# Runtime data
+data/
+.codex-run/
+.claude/
+*.log
+*.tmp
+*.json.tmp
+tmp/
+
+# Local environment
+.env
+.env.local
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/settings.json
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+*.go.[0-9]*
