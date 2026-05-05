@@ -1,5 +1,7 @@
 # Personality Type Test
 
+**Live Demo:** [personality-type-test-69d9.onrender.com](https://personality-type-test-69d9.onrender.com)
+
 A small Go + vanilla JavaScript web app for taking a 28-question personality test, getting an MBTI-style result, and browsing all 16 personality types with socionics codes.
 
 The project is intentionally lightweight: Go serves the API and embedded static files, the frontend is plain HTML/CSS/JavaScript, and submissions are stored in a local JSON file. The goal is to keep the code easy to read, review, and run as a portfolio project.
