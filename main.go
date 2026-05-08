@@ -33,6 +33,7 @@ func main() {
 		cookieSecure:   cfg.CookieSecure,
 		sessionName:    "mbti_admin_session",
 		baseTemplateFS: staticFS,
+		loginLimiter:   newLoginRateLimiter(defaultLoginFailureLimit, defaultLoginCooldown),
 	}
 
 	server := &http.Server{

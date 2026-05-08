@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func newTestApp(t *testing.T) *App {
@@ -30,6 +31,7 @@ func newTestApp(t *testing.T) *App {
 		adminPassword:  "secret",
 		sessionName:    "test_admin_session_" + newID(),
 		baseTemplateFS: sub,
+		loginLimiter:   newLoginRateLimiter(defaultLoginFailureLimit, defaultLoginCooldown),
 	}
 }
 
@@ -247,6 +249,72 @@ func TestAdminRequiresLoginExportsAndLogout(t *testing.T) {
 	}
 }
 
+func TestAdminLoginSuccessAndFailure(t *testing.T) {
+	app := newTestApp(t)
+
+	failed := performJSON(app, http.MethodPost, "/api/login", map[string]string{"password": "wrong"})
+	if failed.Code != http.StatusUnauthorized {
+		t.Fatalf("expected failed login 401, got %d: %s", failed.Code, failed.Body.String())
+	}
+
+	success := performJSON(app, http.MethodPost, "/api/login", map[string]string{"password": "secret"})
+	if success.Code != http.StatusOK {
+		t.Fatalf("expected successful login 200, got %d: %s", success.Code, success.Body.String())
+	}
+	if len(success.Result().Cookies()) == 0 {
+		t.Fatal("expected successful login to set a session cookie")
+	}
+}
+
+func TestAdminLoginRateLimitDoesNotBlockOtherRoutes(t *testing.T) {
+	app := newTestApp(t)
+	now := time.Unix(1000, 0).UTC()
+	limiter := newLoginRateLimiter(3, time.Minute)
+	limiter.now = func() time.Time { return now }
+	app.loginLimiter = limiter
+
+	for i := 0; i < 2; i++ {
+		rec := performJSON(app, http.MethodPost, "/api/login", map[string]string{"password": "wrong"})
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("attempt %d: expected 401 before limit, got %d", i+1, rec.Code)
+		}
+	}
+
+	limited := performJSON(app, http.MethodPost, "/api/login", map[string]string{"password": "wrong"})
+	if limited.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected rate limited login 429, got %d: %s", limited.Code, limited.Body.String())
+	}
+	if limited.Header().Get("Retry-After") != "60" {
+		t.Fatalf("expected Retry-After 60, got %q", limited.Header().Get("Retry-After"))
+	}
+
+	blockedSuccess := performJSON(app, http.MethodPost, "/api/login", map[string]string{"password": "secret"})
+	if blockedSuccess.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected correct password to remain blocked during cooldown, got %d", blockedSuccess.Code)
+	}
+
+	health := httptest.NewRecorder()
+	app.ServeHTTP(health, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	if health.Code != http.StatusOK {
+		t.Fatalf("expected healthz to keep working while login is limited, got %d", health.Code)
+	}
+
+	submit := performJSON(app, http.MethodPost, "/api/submit", map[string]any{
+		"name":     "Yehor",
+		"answers":  answersForType("INTJ"),
+		"duration": 10,
+	})
+	if submit.Code != http.StatusOK {
+		t.Fatalf("expected submit to keep working while login is limited, got %d: %s", submit.Code, submit.Body.String())
+	}
+
+	now = now.Add(time.Minute + time.Second)
+	afterCooldown := performJSON(app, http.MethodPost, "/api/login", map[string]string{"password": "secret"})
+	if afterCooldown.Code != http.StatusOK {
+		t.Fatalf("expected login after cooldown 200, got %d: %s", afterCooldown.Code, afterCooldown.Body.String())
+	}
+}
+
 func TestAdminJSONExportDeleteAndClear(t *testing.T) {
 	app := newTestApp(t)
 	addStoredResult(t, app, "one", "INTJ")
@@ -291,7 +359,10 @@ func TestAdminJSONExportDeleteAndClear(t *testing.T) {
 
 func TestStaticAssetsServed(t *testing.T) {
 	app := newTestApp(t)
-	targets := []string{"/", "/app.js", "/compatibility-engine.js", "/content-uk.js", "/content-ru.js", "/content-en.js", "/content-author.js", "/content-profiles-uk.js", "/content-profiles-ru.js", "/content-profiles-en.js", "/style.css", "/types-data.js"}
+	targets := []string{"/", "/compatibility-engine.js", "/content-uk.js", "/content-ru.js", "/content-en.js", "/content-author.js", "/content-profiles-uk.js", "/content-profiles-ru.js", "/content-profiles-en.js", "/style.css", "/types-data.js"}
+	for _, target := range []string{"/js/api.js", "/js/state.js", "/js/dom.js", "/js/utils.js", "/js/i18n.js", "/js/ui.js", "/js/results.js", "/js/compatibility.js", "/js/quiz.js", "/js/types.js", "/js/admin.js", "/js/share.js", "/js/events.js", "/js/app.js"} {
+		targets = append(targets, target)
+	}
 	for _, code := range []string{"intj", "intp", "entj", "entp", "infj", "infp", "enfj", "enfp", "istj", "isfj", "estj", "esfj", "istp", "isfp", "estp", "esfp"} {
 		targets = append(targets, "/assets/share-cards/"+code+".png")
 	}

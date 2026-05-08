@@ -22,8 +22,16 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Check formatting
         run: test -z "$(gofmt -l .)"
+
+      - name: JavaScript syntax
+        run: node scripts/js-check.mjs
 
       - name: Vet
         run: go vet ./...

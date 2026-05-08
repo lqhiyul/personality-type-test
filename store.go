@@ -51,7 +51,8 @@ func (s *Store) load() error {
 }
 
 func (s *Store) persistLocked() error {
-	if err := os.MkdirAll(filepath.Dir(s.file), 0o755); err != nil {
+	dir := filepath.Dir(s.file)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 	b, err := json.MarshalIndent(s.data, "", "  ")
@@ -59,10 +60,49 @@ func (s *Store) persistLocked() error {
 		return err
 	}
 	b = append(b, '\n')
-	if err := os.WriteFile(s.file, b, 0o644); err != nil {
+
+	tmp, err := os.CreateTemp(dir, filepath.Base(s.file)+".*.tmp")
+	if err != nil {
 		return err
 	}
+	tmpName := tmp.Name()
+	keepTemp := false
+	defer func() {
+		if !keepTemp {
+			_ = os.Remove(tmpName)
+		}
+	}()
+
+	if _, err := tmp.Write(b); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Chmod(0o644); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpName, s.file); err != nil {
+		return err
+	}
+	keepTemp = true
+	syncParentDir(dir)
 	return nil
+}
+
+func syncParentDir(dir string) {
+	parent, err := os.Open(dir)
+	if err != nil {
+		return
+	}
+	defer parent.Close()
+	_ = parent.Sync()
 }
 
 func (s *Store) Add(result Result) error {

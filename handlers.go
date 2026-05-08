@@ -25,6 +25,7 @@ type App struct {
 	cookieSecure   bool
 	sessionName    string
 	baseTemplateFS fs.FS
+	loginLimiter   *loginRateLimiter
 }
 
 type submitRequest struct {
@@ -117,7 +118,7 @@ func isStaticAssetRequest(requestPath string) bool {
 	if name == "." || strings.HasPrefix(name, "../") {
 		return false
 	}
-	if strings.Contains(name, "/") && !strings.HasPrefix(name, "assets/") {
+	if strings.Contains(name, "/") && !strings.HasPrefix(name, "assets/") && !strings.HasPrefix(name, "js/") {
 		return false
 	}
 	switch path.Ext(name) {
@@ -184,11 +185,23 @@ func (a *App) handleLogin(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "Некоректний JSON у запиті")
 		return
 	}
+
+	limitKey := loginRateLimitKey(r)
+	if retryAfter, ok := a.loginLimiter.allow(limitKey); !ok {
+		writeRateLimitError(w, retryAfter)
+		return
+	}
+
 	if !subtleCompare(req.Password, a.adminPassword) {
+		if retryAfter, limited := a.loginLimiter.recordFailure(limitKey); limited {
+			writeRateLimitError(w, retryAfter)
+			return
+		}
 		writeJSONError(w, http.StatusUnauthorized, "Невірний пароль")
 		return
 	}
 
+	a.loginLimiter.recordSuccess(limitKey)
 	token := newSessionToken()
 	storeSession(token)
 	setAdminCookie(w, a.sessionName, token, a.cookieSecure, int(sessionTTL.Seconds()))
@@ -372,6 +385,15 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 
 func writeJSONError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
+}
+
+func writeRateLimitError(w http.ResponseWriter, retryAfter time.Duration) {
+	seconds := int((retryAfter + time.Second - 1) / time.Second)
+	if seconds < 1 {
+		seconds = 1
+	}
+	w.Header().Set("Retry-After", strconv.Itoa(seconds))
+	writeJSONError(w, http.StatusTooManyRequests, "Too many login attempts. Try again later.")
 }
 
 func methodNotAllowed(w http.ResponseWriter, allowed ...string) {

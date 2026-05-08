@@ -28,3 +28,9 @@ tmp/
 .DS_Store
 Thumbs.db
 *.go.[0-9]*
+
+.vscode/
+.codex-run/
+.claude/
+data/
+*.exe

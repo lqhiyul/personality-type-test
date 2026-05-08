@@ -88,4 +88,12 @@ func TestStoreAddAndDeletePersist(t *testing.T) {
 	if len(results) != 0 {
 		t.Fatalf("expected no results after clear, got %d", len(results))
 	}
+
+	matches, err := filepath.Glob(filepath.Join(filepath.Dir(file), filepath.Base(file)+".*.tmp"))
+	if err != nil {
+		t.Fatalf("glob temp files: %v", err)
+	}
+	if len(matches) != 0 {
+		t.Fatalf("expected atomic write temp files to be cleaned up, got %v", matches)
+	}
 }
