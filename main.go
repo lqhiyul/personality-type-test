@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"io/fs"
 	"log"
@@ -21,6 +22,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("store init: %v", err)
 	}
+
+	db, err := OpenAppDB(context.Background(), cfg.DatabasePath)
+	if err != nil {
+		log.Fatalf("database init: %v", err)
+	}
+	defer db.Close()
 
 	staticFS, err := fs.Sub(staticFiles, "web/static")
 	if err != nil {

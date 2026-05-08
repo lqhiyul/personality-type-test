@@ -7,11 +7,13 @@ import (
 )
 
 const defaultAdminPassword = "change-me"
+const defaultDatabasePath = "data/app.db"
 
 type Config struct {
 	Addr                     string
 	AdminPassword            string
 	DataFile                 string
+	DatabasePath             string
 	CookieSecure             bool
 	UsesDefaultAdminPassword bool
 }
@@ -23,6 +25,7 @@ func ConfigFromEnv() Config {
 		Addr:                     resolveAddr(),
 		AdminPassword:            adminPassword,
 		DataFile:                 envOr("DATA_FILE", "data/results.json"),
+		DatabasePath:             envOr("DATABASE_PATH", defaultDatabasePath),
 		CookieSecure:             envBool("COOKIE_SECURE", false),
 		UsesDefaultAdminPassword: adminPassword == defaultAdminPassword,
 	}

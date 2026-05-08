@@ -8,7 +8,7 @@
 
 Note: The Render free plan may spin down after inactivity, so the first request can take 30–60 seconds.
 
-A lightweight full-stack personality type test with a Go HTTP backend, modular vanilla JavaScript frontend, local JSON result storage, result insights, compatibility, share cards, and an admin/export panel.
+A lightweight full-stack personality type test with a Go HTTP backend, modular vanilla JavaScript frontend, local JSON result storage, a small SQLite foundation for future accounts, result insights, compatibility, share cards, and an admin/export panel.
 
 **Quick links:** [Preview](#preview) | [Features](#features) | [Quick Start](#quick-start) | [Docker](#docker) | [Quality Checks](#quality-checks) | [API](#api-overview)
 
@@ -39,13 +39,14 @@ When those files exist, replace this note with a short screenshot gallery.
 - Hidden admin panel with login, logout, search, delete, clear, CSV export, JSON export, and demo/autopass mode.
 - In-memory login rate limiting for repeated failed admin login attempts by IP address.
 - Local JSON persistence with safer temp-file writes and rename.
+- Minimal SQLite schema and store layer prepared for future user accounts and saved user results.
 - Embedded static assets, Docker support, GitHub Actions, Go tests, and JavaScript syntax checks.
 
 ## Tech Stack
 
 - **Backend:** Go 1.22, standard `net/http`, embedded static files.
 - **Frontend:** HTML, CSS, modular vanilla JavaScript.
-- **Storage:** local JSON file at `data/results.json` by default.
+- **Storage:** anonymous quiz submissions use local JSON at `data/results.json`; future account data is prepared in SQLite at `data/app.db` by default.
 - **Tooling:** Docker, Makefile, GitHub Actions, Node-based JavaScript syntax check.
 
 ## What This Project Demonstrates
@@ -110,9 +111,20 @@ The image runs as a non-root user, exposes port `8080`, and includes a `/healthz
 | `ADDR` | empty | Exact bind address override, for example `127.0.0.1:8080`. Wins over `HOST` and `PORT`. |
 | `ADMIN_PASSWORD` | `change-me` | Password for the admin panel. Change it before public deploys. |
 | `DATA_FILE` | `data/results.json` | Path for saved quiz submissions. |
+| `DATABASE_PATH` | `data/app.db` | SQLite database path for future user accounts and saved user test results. |
 | `COOKIE_SECURE` | `false` | Keep `false` locally. Set to `true` only behind HTTPS. |
 
-Runtime data is ignored by Git. The `data/results.json` file is created automatically after the first saved result.
+Runtime data is ignored by Git. The `data/results.json` file is created automatically after the first saved anonymous result, and `data/app.db` is created when the SQLite foundation initializes.
+
+## SQLite Foundation
+
+SQLite is prepared for future user accounts and saved user test results. This phase does not add public registration, user login, profile pages, friends, comments, private messages, or OAuth.
+
+The current anonymous quiz flow still saves submissions through the existing JSON `DATA_FILE` store, so the admin list, export, delete, clear, and stats tools continue to use the same behavior as before.
+
+Set `DATABASE_PATH` to move the SQLite file. If it is empty, the app falls back to `data/app.db`. The default `data/` directory is ignored by Git, so runtime database files should not be committed.
+
+On Render Free, account data in SQLite needs a persistent disk if it must survive restarts, redeploys, or instance replacement.
 
 ## Quality Checks
 
@@ -174,12 +186,14 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 |   +-- result-insights.js
 |   +-- types-data.js
 +-- config.go
++-- db.go
 +-- handlers.go
 +-- login_rate_limiter.go
 +-- main.go
 +-- scoring.go
 +-- sessions.go
 +-- store.go
++-- user_store.go
 +-- *_test.go
 +-- Dockerfile
 +-- Makefile
@@ -214,6 +228,7 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 
 - This is an educational/self-reflection tool, not a medical, psychological, or scientific diagnosis.
 - JSON file storage is simple and reviewable, but it is not ideal for multi-instance deployments.
+- SQLite is currently only a foundation for future accounts; anonymous submissions still use the JSON store.
 - Sessions and login rate limits are in memory, so they reset when the process restarts.
 - Real screenshots still need to be captured manually before the README has a full visual gallery.
 - Stats are computed from the saved JSON result fields; missing legacy timestamps are omitted from `latestResultAt`.
@@ -223,7 +238,7 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 - Add real screenshots or a short GIF from the running app.
 - Add a lightweight browser smoke test when it is worth the extra tooling.
 - Add pagination for admin results if the JSON file grows.
-- Move to a database only if the project becomes a public multi-user app.
+- Build registration and login on top of the existing SQLite foundation.
 
 ## Author
 
