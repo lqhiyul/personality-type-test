@@ -126,6 +126,9 @@ function openTypeDetail(typeCode, options = {}) {
 
 function updateRoute(tab, typeCode = "", replace = false) {
   const params = new URLSearchParams();
+  const currentParams = new URLSearchParams(window.location.search);
+  if (currentParams.get("admin") === "1") params.set("admin", "1");
+  else if (currentParams.get("qa") === "1") params.set("qa", "1");
   if (tab === "types") params.set("tab", "types");
   if (tab === "compatibility") {
     params.set("tab", "compatibility");
@@ -165,7 +168,10 @@ function setTab(tab, options = {}) {
 function applyRoute(options = {}) {
   const params = new URLSearchParams(window.location.search);
   const typeCode = params.get("type")?.toUpperCase() || "";
-  if (params.get("admin") === "1") setAdminCardVisible(true, { focus: false });
+  const adminRequested = params.get("admin") === "1";
+  const qaRequested = params.get("qa") === "1";
+  setAdminAccessAvailable(adminRequested || qaRequested);
+  if (adminRequested) setAdminCardVisible(true, { focus: false });
   if (params.get("tab") === "compatibility") {
     setCompatibilityState({
       typeA: params.get("typeA")?.toUpperCase() || "",

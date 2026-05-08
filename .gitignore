@@ -1,26 +1,30 @@
-# Build output
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Runtime data and local tool state
+data/
+.codex-run/
+.claude/
+
+# Build, coverage, and temporary output
 *.exe
 *.out
 *.test
 coverage.out
-
-# Runtime data
-data/
-.codex-run/
-.claude/
 *.log
 *.tmp
 *.json.tmp
 tmp/
-
-# Local environment
-.env
-.env.local
+temp/
+cache/
+build/
+dist/
 
 # Editors
+.vscode/
 .idea/
-.vscode/*
-!.vscode/settings.json
 *.swp
 *.swo
 
@@ -28,9 +32,3 @@ tmp/
 .DS_Store
 Thumbs.db
 *.go.[0-9]*
-
-.vscode/
-.codex-run/
-.claude/
-data/
-*.exe

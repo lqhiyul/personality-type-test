@@ -129,6 +129,16 @@ function setAdminCardVisible(visible, options = {}) {
   }
 }
 
+function setAdminAccessAvailable(available) {
+  const access = E("adminAccessBtn");
+  if (!access) return;
+  access.hidden = !available;
+  if (!available) {
+    setAdminAccessPopoverVisible(false);
+    setAdminCardVisible(false);
+  }
+}
+
 function setAdminAccessPopoverVisible(visible, options = {}) {
   const popover = E("adminAccessPopover");
   const access = E("adminAccessBtn");

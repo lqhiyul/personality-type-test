@@ -1978,6 +1978,11 @@ a:focus-visible{
   transition:transform .18s ease, color .18s ease, border-color .18s ease, background .18s ease;
 }
 
+.admin-access-btn[hidden],
+.admin-access-popover[hidden]{
+  display:none!important;
+}
+
 .admin-access-btn span{
   font-size:10px;
   font-weight:850;

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -354,6 +355,97 @@ func TestAdminJSONExportDeleteAndClear(t *testing.T) {
 	results, _ = app.store.All()
 	if len(results) != 0 {
 		t.Fatalf("expected no results after clear, got %+v", results)
+	}
+}
+
+func TestStatsEndpointRequiresLoginAndHandlesEmptyResults(t *testing.T) {
+	app := newTestApp(t)
+
+	unauthorized := performJSON(app, http.MethodGet, "/api/stats", nil)
+	if unauthorized.Code != http.StatusUnauthorized {
+		t.Fatalf("expected stats to require login, got %d", unauthorized.Code)
+	}
+
+	rec := performJSON(app, http.MethodGet, "/api/stats", nil, login(t, app)...)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected stats 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var stats statsResponse
+	if err := json.NewDecoder(rec.Body).Decode(&stats); err != nil {
+		t.Fatalf("decode stats: %v", err)
+	}
+	if stats.Total != 0 || stats.AverageDurationSeconds != 0 {
+		t.Fatalf("unexpected empty totals: %+v", stats)
+	}
+	if len(stats.ByType) != 0 || len(stats.TopTypes) != 0 {
+		t.Fatalf("expected empty type stats, got %+v", stats)
+	}
+	if stats.LatestResultAt != nil {
+		t.Fatalf("expected no latest timestamp for empty stats, got %v", stats.LatestResultAt)
+	}
+	for _, code := range []string{"E", "I", "S", "N", "T", "F", "J", "P"} {
+		if stats.AxisDistribution[code] != 0 {
+			t.Fatalf("expected empty axis %s to be 0, got %d", code, stats.AxisDistribution[code])
+		}
+	}
+}
+
+func TestBuildStatsAggregatesOneResult(t *testing.T) {
+	created := time.Unix(100, 0).UTC()
+	stats := buildStats([]Result{{Type: "infj", Duration: 42, Created: created}})
+
+	if stats.Total != 1 {
+		t.Fatalf("expected total 1, got %d", stats.Total)
+	}
+	if stats.AverageDurationSeconds != 42 {
+		t.Fatalf("expected average duration 42, got %d", stats.AverageDurationSeconds)
+	}
+	if !reflect.DeepEqual(stats.ByType, map[string]int{"INFJ": 1}) {
+		t.Fatalf("unexpected byType: %+v", stats.ByType)
+	}
+	if !reflect.DeepEqual(stats.TopTypes, []typeCount{{Type: "INFJ", Count: 1}}) {
+		t.Fatalf("unexpected topTypes: %+v", stats.TopTypes)
+	}
+	wantAxis := map[string]int{"E": 0, "I": 1, "S": 0, "N": 1, "T": 0, "F": 1, "J": 1, "P": 0}
+	if !reflect.DeepEqual(stats.AxisDistribution, wantAxis) {
+		t.Fatalf("unexpected axis distribution: %+v", stats.AxisDistribution)
+	}
+	if stats.LatestResultAt == nil || !stats.LatestResultAt.Equal(created) {
+		t.Fatalf("unexpected latest timestamp: %v", stats.LatestResultAt)
+	}
+}
+
+func TestBuildStatsAggregatesMultipleResults(t *testing.T) {
+	older := time.Unix(100, 0).UTC()
+	newer := time.Unix(200, 0).UTC()
+	stats := buildStats([]Result{
+		{Type: "INTJ", Duration: 10, Created: older},
+		{Type: "ENFP", Duration: 20, Created: newer},
+		{Type: "INTJ", Duration: 30, Created: older},
+		{Type: "INFP", Duration: -5},
+	})
+
+	if stats.Total != 4 {
+		t.Fatalf("expected total 4, got %d", stats.Total)
+	}
+	if stats.AverageDurationSeconds != 15 {
+		t.Fatalf("expected average duration 15, got %d", stats.AverageDurationSeconds)
+	}
+	wantByType := map[string]int{"INTJ": 2, "ENFP": 1, "INFP": 1}
+	if !reflect.DeepEqual(stats.ByType, wantByType) {
+		t.Fatalf("unexpected byType: %+v", stats.ByType)
+	}
+	wantTopTypes := []typeCount{{Type: "INTJ", Count: 2}, {Type: "ENFP", Count: 1}, {Type: "INFP", Count: 1}}
+	if !reflect.DeepEqual(stats.TopTypes, wantTopTypes) {
+		t.Fatalf("unexpected topTypes: %+v", stats.TopTypes)
+	}
+	wantAxis := map[string]int{"E": 1, "I": 3, "S": 0, "N": 4, "T": 2, "F": 2, "J": 2, "P": 2}
+	if !reflect.DeepEqual(stats.AxisDistribution, wantAxis) {
+		t.Fatalf("unexpected axis distribution: %+v", stats.AxisDistribution)
+	}
+	if stats.LatestResultAt == nil || !stats.LatestResultAt.Equal(newer) {
+		t.Fatalf("unexpected latest timestamp: %v", stats.LatestResultAt)
 	}
 }
 

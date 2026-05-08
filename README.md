@@ -6,20 +6,19 @@
 
 **Live Demo:** [personality-type-test-69d9.onrender.com](https://personality-type-test-69d9.onrender.com)
 
+Note: The Render free plan may spin down after inactivity, so the first request can take 30–60 seconds.
+
 A lightweight full-stack personality type test with a Go HTTP backend, modular vanilla JavaScript frontend, local JSON result storage, result insights, compatibility, share cards, and an admin/export panel.
 
-
-**Live demo:** not verified yet. A deployment link should be added only after the hosted app is checked manually.
-
-**Quick links:** [Preview](#preview) · [Features](#features) · [Quick Start](#quick-start) · [Docker](#docker) · [Quality Checks](#quality-checks) · [API](#api-overview)
+**Quick links:** [Preview](#preview) | [Features](#features) | [Quick Start](#quick-start) | [Docker](#docker) | [Quality Checks](#quality-checks) | [API](#api-overview)
 
 ## Preview
 
-The repository currently includes a lightweight preview asset, but no real browser screenshots yet.
+The repository includes a lightweight preview asset. It is not a real browser screenshot.
 
 ![Project preview](assets/preview.svg)
 
-Real screenshots should be added manually after running the app locally:
+Real browser screenshots are not committed yet. After running the app locally, capture and add:
 
 ```text
 assets/screenshots/home.png
@@ -29,14 +28,7 @@ assets/screenshots/types.png
 assets/screenshots/admin.png
 ```
 
-Manual screenshot workflow:
-
-1. Run the app locally with the commands in [Quick Start](#quick-start).
-2. Open `http://localhost:8080` in a browser.
-3. Capture the home, quiz, result, types, and admin screens.
-4. Save the files into `assets/screenshots/`.
-5. Commit the images.
-6. Replace this note with a screenshot gallery once the files exist.
+When those files exist, replace this note with a short screenshot gallery.
 
 ## Features
 
@@ -87,7 +79,7 @@ HOST=127.0.0.1 PORT=8080 ADMIN_PASSWORD=change-me go run .
 
 Open `http://localhost:8080`.
 
-Admin tools are intentionally subtle in the public UI. Locally, click the small `QA` control or open `http://localhost:8080/?admin=1`, then log in with `ADMIN_PASSWORD`.
+Admin/QA tools are hidden from the normal public UI. Open `http://localhost:8080/?admin=1` to show the admin panel, or `http://localhost:8080/?qa=1` to show the subtle QA entry, then log in with `ADMIN_PASSWORD`.
 
 For phone testing on the same Wi-Fi network, bind to all interfaces:
 
@@ -207,11 +199,12 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 | `GET` | `/api/results/export?format=json` | Export saved results as JSON. |
 | `DELETE` | `/api/results` | Delete all results. |
 | `DELETE` | `/api/results/{id}` | Delete one result. |
-| `GET` | `/api/stats` | Return saved result statistics. |
+| `GET` | `/api/stats` | Return admin-only saved result statistics: total, average duration, type distribution, top types, axis distribution, and latest result timestamp when available. |
 
 ## Security Notes
 
 - Admin access uses a single password configured through `ADMIN_PASSWORD`.
+- Admin results, export, delete, clear, and stats endpoints require an active admin session.
 - Failed admin login attempts are rate-limited in memory per IP address.
 - Session cookies are `HttpOnly` and `SameSite=Lax`.
 - Set `COOKIE_SECURE=true` only when the app is served behind HTTPS.
@@ -222,12 +215,11 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 - This is an educational/self-reflection tool, not a medical, psychological, or scientific diagnosis.
 - JSON file storage is simple and reviewable, but it is not ideal for multi-instance deployments.
 - Sessions and login rate limits are in memory, so they reset when the process restarts.
-- No verified live demo is currently linked.
 - Real screenshots still need to be captured manually before the README has a full visual gallery.
+- Stats are computed from the saved JSON result fields; missing legacy timestamps are omitted from `latestResultAt`.
 
 ## Roadmap
 
-- Add verified live deployment link after manual testing.
 - Add real screenshots or a short GIF from the running app.
 - Add a lightweight browser smoke test when it is worth the extra tooling.
 - Add pagination for admin results if the JSON file grows.

@@ -38,6 +38,20 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
+type typeCount struct {
+	Type  string `json:"type"`
+	Count int    `json:"count"`
+}
+
+type statsResponse struct {
+	Total                  int            `json:"total"`
+	AverageDurationSeconds int            `json:"averageDurationSeconds"`
+	ByType                 map[string]int `json:"byType"`
+	TopTypes               []typeCount    `json:"topTypes"`
+	AxisDistribution       map[string]int `json:"axisDistribution"`
+	LatestResultAt         *time.Time     `json:"latestResultAt,omitempty"`
+}
+
 type responseRecorder struct {
 	http.ResponseWriter
 	status int
@@ -334,14 +348,76 @@ func (a *App) handleStats(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusInternalServerError, "Не вдалося прочитати статистику")
 		return
 	}
+	writeJSON(w, http.StatusOK, buildStats(results))
+}
+
+func buildStats(results []Result) statsResponse {
 	byType := map[string]int{}
+	axisDistribution := map[string]int{"E": 0, "I": 0, "S": 0, "N": 0, "T": 0, "F": 0, "J": 0, "P": 0}
+	totalDuration := 0
+	var latestResultAt *time.Time
+
 	for _, result := range results {
-		byType[result.Type]++
+		duration := result.Duration
+		if duration < 0 {
+			duration = 0
+		}
+		totalDuration += duration
+
+		typeCode, ok := normalizedResultType(result.Type)
+		if ok {
+			byType[typeCode]++
+			for _, code := range typeCode {
+				axisDistribution[string(code)]++
+			}
+		}
+
+		if !result.Created.IsZero() {
+			created := result.Created.UTC()
+			if latestResultAt == nil || created.After(*latestResultAt) {
+				latestResultAt = &created
+			}
+		}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{
-		"total":  len(results),
-		"byType": byType,
+
+	topTypes := make([]typeCount, 0, len(byType))
+	for typeCode, count := range byType {
+		topTypes = append(topTypes, typeCount{Type: typeCode, Count: count})
+	}
+	sort.Slice(topTypes, func(i, j int) bool {
+		if topTypes[i].Count == topTypes[j].Count {
+			return topTypes[i].Type < topTypes[j].Type
+		}
+		return topTypes[i].Count > topTypes[j].Count
 	})
+
+	averageDuration := 0
+	if len(results) > 0 {
+		averageDuration = totalDuration / len(results)
+	}
+
+	return statsResponse{
+		Total:                  len(results),
+		AverageDurationSeconds: averageDuration,
+		ByType:                 byType,
+		TopTypes:               topTypes,
+		AxisDistribution:       axisDistribution,
+		LatestResultAt:         latestResultAt,
+	}
+}
+
+func normalizedResultType(value string) (string, bool) {
+	code := strings.ToUpper(strings.TrimSpace(value))
+	if len(code) != len(dimensions) {
+		return "", false
+	}
+	for i, dim := range dimensions {
+		letter := code[i : i+1]
+		if letter != dim.LeftCode && letter != dim.RightCode {
+			return "", false
+		}
+	}
+	return code, true
 }
 
 func (a *App) authorized(r *http.Request) bool {
