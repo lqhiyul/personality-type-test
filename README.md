@@ -1,10 +1,13 @@
 # Personality Type Test
 
 [![CI](https://github.com/lqhiyul/personality-type-test/actions/workflows/go.yml/badge.svg)](https://github.com/lqhiyul/personality-type-test/actions/workflows/go.yml)
-![Go](https://img.shields.io/badge/Go-1.22-00ADD8?logo=go&logoColor=white)
+![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white)
 ![Vanilla JS](https://img.shields.io/badge/Frontend-Vanilla%20JS-F7DF1E?logo=javascript&logoColor=111)
 
-A lightweight full-stack personality type test with a Go HTTP backend, modular vanilla JavaScript frontend, local JSON result storage, and an admin/export panel.
+**Live Demo:** [personality-type-test-69d9.onrender.com](https://personality-type-test-69d9.onrender.com)
+
+A lightweight full-stack personality type test with a Go HTTP backend, modular vanilla JavaScript frontend, local JSON result storage, result insights, compatibility, share cards, and an admin/export panel.
+
 
 **Live demo:** not verified yet. A deployment link should be added only after the hosted app is checked manually.
 
