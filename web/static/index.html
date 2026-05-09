@@ -23,6 +23,77 @@
         <button id="tabCompatibility" class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="compatibilitySection">Сумісність</button>
       </nav>
 
+      <button type="button" class="account-btn" id="accountBtn" aria-expanded="false" aria-controls="accountPanel">
+        <span class="account-btn__dot" aria-hidden="true"></span>
+        <span id="accountBtnLabel">Account</span>
+      </button>
+
+      <section class="account-popover" id="accountPanel" aria-labelledby="accountPanelTitle" hidden>
+        <div class="account-popover__head">
+          <div>
+            <div class="account-popover__eyebrow" id="accountPanelEyebrow">Account</div>
+            <h2 id="accountPanelTitle">My account</h2>
+          </div>
+          <button type="button" class="account-popover__close" id="accountCloseBtn" aria-label="Close account panel">&times;</button>
+        </div>
+
+        <div id="accountSignedOut">
+          <div class="auth-mode-toggle" role="group" aria-label="Auth mode">
+            <button type="button" id="authLoginModeBtn" data-auth-mode="login">Log in</button>
+            <button type="button" id="authRegisterModeBtn" data-auth-mode="register">Register</button>
+          </div>
+
+          <form id="authForm" class="auth-form">
+            <div class="field auth-field-register" id="authUsernameField">
+              <label id="authUsernameLabel" for="authUsername">Username</label>
+              <input id="authUsername" type="text" autocomplete="username" maxlength="32" />
+            </div>
+            <div class="field auth-field-login" id="authLoginField">
+              <label id="authLoginLabel" for="authLogin">Email or username</label>
+              <input id="authLogin" type="text" autocomplete="username" />
+            </div>
+            <div class="field auth-field-register" id="authEmailField">
+              <label id="authEmailLabel" for="authEmail">Email</label>
+              <input id="authEmail" type="text" inputmode="email" autocomplete="email" />
+            </div>
+            <div class="field">
+              <label id="authPasswordLabel" for="authPassword">Password</label>
+              <input id="authPassword" type="password" autocomplete="current-password" />
+            </div>
+            <button type="submit" class="btn primary" id="authSubmitBtn">Log in</button>
+          </form>
+        </div>
+
+        <div id="accountSignedIn" class="account-signed-in" hidden>
+          <div class="account-summary">
+            <div class="account-avatar" id="accountAvatar" aria-hidden="true">A</div>
+            <div>
+              <strong id="accountName">Account</strong>
+              <span id="accountEmail"></span>
+            </div>
+          </div>
+          <div class="account-profile-links">
+            <button type="button" class="account-link-btn" id="viewPublicProfileBtn">View public profile</button>
+            <button type="button" class="account-link-btn" id="copyPublicProfileBtn">Copy profile link</button>
+          </div>
+          <section class="profile-results" aria-labelledby="profileResultsTitle">
+            <div class="profile-results__head">
+              <div>
+                <div class="profile-results__eyebrow" id="profilePrimaryLabel">Primary type</div>
+                <strong id="profilePrimaryType">Not selected</strong>
+              </div>
+              <button type="button" class="profile-results__refresh" id="profileRefreshBtn">Refresh</button>
+            </div>
+            <div class="profile-results__latest" id="profileLatestResult"></div>
+            <h3 id="profileResultsTitle">Result history</h3>
+            <div class="profile-results__list" id="profileResultsList"></div>
+          </section>
+          <button type="button" class="btn ghost" id="authLogoutBtn">Log out</button>
+        </div>
+
+        <div id="authNotice" class="auth-notice" role="status" aria-live="polite"></div>
+      </section>
+
       <div class="language-switcher" id="languageSwitcher" role="group" aria-label="Мова інтерфейсу">
         <button type="button" data-lang="uk" aria-pressed="true">UA</button>
         <button type="button" data-lang="ru" aria-pressed="false">RU</button>
@@ -55,6 +126,12 @@
       <div class="eyebrow" id="compatibilityEyebrow">Динаміка взаємодії</div>
       <h1 id="compatibilityTitle">Сумісність типів</h1>
       <p id="compatibilityCopy">Порівняйте два типи в дружбі, стосунках або роботі як спокійну гіпотезу про взаємодію, не як вирок.</p>
+    </header>
+
+    <header class="hero" id="profileHero" hidden>
+      <div class="eyebrow" id="profileEyebrow">Public profile</div>
+      <h1 id="profileTitle">Personality profile</h1>
+      <p id="profileCopy">A safe public summary shared by username.</p>
     </header>
 
     <section class="layout" id="quizSection" role="tabpanel" aria-labelledby="tabQuiz">
@@ -173,6 +250,8 @@
 
     <section id="compatibilitySection" class="compatibility-section" role="tabpanel" aria-labelledby="tabCompatibility" hidden></section>
 
+    <section id="profileSection" class="public-profile-section" hidden></section>
+
     <section class="trust-note" id="trustNote" aria-label="Privacy and disclaimer"></section>
     <footer class="footer" id="footerText"></footer>
   </main>
@@ -198,6 +277,8 @@
   <script src="js/quiz.js"></script>
   <script src="js/types.js"></script>
   <script src="js/admin.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/profile.js"></script>
   <script src="js/share.js"></script>
   <script src="js/events.js"></script>
   <script src="js/app.js"></script>

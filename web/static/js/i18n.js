@@ -106,6 +106,9 @@ function applyStaticText() {
   setText("compatibilityEyebrow", t("ui.heroCompatibility.eyebrow", t("ui.compatibility.toolsLabel", "Compatibility")));
   setText("compatibilityTitle", t("ui.heroCompatibility.title", t("ui.tabs.compatibility", "Type Compatibility")));
   setText("compatibilityCopy", t("ui.heroCompatibility.copy", ""));
+  setText("profileEyebrow", t("ui.publicProfile.eyebrow", "Public profile"));
+  setText("profileTitle", t("ui.publicProfile.title", "Personality profile"));
+  setText("profileCopy", t("ui.publicProfile.copy", "A safe public summary shared by username."));
 
   setText("metricQuestionsLabel", t("ui.progress.questions"));
   setText("metricDoneLabel", t("ui.progress.done"));
@@ -143,6 +146,8 @@ function applyStaticText() {
   setText("demoRunBtn", t("ui.admin.demoRun", "Demo run"));
   setText("demoCancelBtn", t("ui.admin.demoCancel", "Cancel"));
   renderDemoTypeOptions();
+  if (typeof applyAuthStaticText === "function") applyAuthStaticText();
+  if (typeof renderPublicProfile === "function" && state.publicProfile && !E("profileSection")?.hidden) renderPublicProfile();
 
   const trust = E("trustNote");
   if (trust) {

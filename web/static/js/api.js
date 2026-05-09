@@ -4,6 +4,13 @@ const API = {
   logout: "/api/logout",
   results: "/api/results",
   export: "/api/results/export",
+  authRegister: "/api/auth/register",
+  authLogin: "/api/auth/login",
+  authLogout: "/api/auth/logout",
+  authMe: "/api/auth/me",
+  myResults: "/api/me/results",
+  myProfile: "/api/me/profile",
+  users: "/api/users",
 };
 
 async function requestJSON(url, options = {}) {
@@ -46,4 +53,40 @@ function deleteStoredResult(id) {
 
 function fetchResultsExport(format = "csv") {
   return fetch(format === "json" ? `${API.export}?format=json` : API.export);
+}
+
+function registerAccount(payload) {
+  return requestJSON(API.authRegister, { method: "POST", body: payload });
+}
+
+function loginAccount(payload) {
+  return requestJSON(API.authLogin, { method: "POST", body: payload });
+}
+
+function logoutAccount() {
+  return fetch(API.authLogout, { method: "POST" });
+}
+
+function fetchCurrentAccount() {
+  return fetch(API.authMe);
+}
+
+function fetchMyResults() {
+  return fetch(API.myResults);
+}
+
+function setPrimaryMyResult(id) {
+  return requestJSON(`${API.myResults}/${encodeURIComponent(id)}/primary`, { method: "POST" });
+}
+
+function deleteMyResult(id) {
+  return fetch(`${API.myResults}/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+function fetchPublicProfile(username) {
+  return fetch(`${API.users}/${encodeURIComponent(username)}`);
+}
+
+function updateMyProfile(payload) {
+  return requestJSON(API.myProfile, { method: "PATCH", body: payload });
 }

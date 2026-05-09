@@ -157,9 +157,11 @@ function setTab(tab, options = {}) {
   E("quizSection").hidden = !isQuiz;
   E("typesSection").hidden = !isTypes;
   E("compatibilitySection").hidden = !isCompatibility;
+  if (E("profileSection")) E("profileSection").hidden = true;
   E("quizHero").hidden = !isQuiz;
   E("typesHero").hidden = !isTypes;
   E("compatibilityHero").hidden = !isCompatibility;
+  if (E("profileHero")) E("profileHero").hidden = true;
   if (isTypes && !skipRender) renderTypesGrid();
   if (isCompatibility && !skipRender) renderCompatibility();
   if (updateHistory) updateRoute(activeTab);
@@ -172,6 +174,12 @@ function applyRoute(options = {}) {
   const qaRequested = params.get("qa") === "1";
   setAdminAccessAvailable(adminRequested || qaRequested);
   if (adminRequested) setAdminCardVisible(true, { focus: false });
+  const profileUsername = params.get("profile") || "";
+  if (profileUsername && typeof openPublicProfile === "function") {
+    openPublicProfile(profileUsername, { updateHistory: false });
+    if (options.replace) updatePublicProfileRoute(profileUsername, true);
+    return;
+  }
   if (params.get("tab") === "compatibility") {
     setCompatibilityState({
       typeA: params.get("typeA")?.toUpperCase() || "",

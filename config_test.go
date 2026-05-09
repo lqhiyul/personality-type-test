@@ -34,3 +34,21 @@ func TestConfigFromEnvAddrOverridesHostAndPort(t *testing.T) {
 		t.Fatalf("expected ADDR override, got %q", cfg.Addr)
 	}
 }
+
+func TestConfigFromEnvUsesDefaultDatabasePath(t *testing.T) {
+	t.Setenv("DATABASE_PATH", "")
+
+	cfg := ConfigFromEnv()
+	if cfg.DatabasePath != defaultDatabasePath {
+		t.Fatalf("expected default database path %q, got %q", defaultDatabasePath, cfg.DatabasePath)
+	}
+}
+
+func TestConfigFromEnvUsesDatabasePath(t *testing.T) {
+	t.Setenv("DATABASE_PATH", "data/custom.db")
+
+	cfg := ConfigFromEnv()
+	if cfg.DatabasePath != "data/custom.db" {
+		t.Fatalf("expected configured database path, got %q", cfg.DatabasePath)
+	}
+}
