@@ -35,12 +35,15 @@ func main() {
 	}
 
 	app := &App{
-		store:          store,
-		adminPassword:  cfg.AdminPassword,
-		cookieSecure:   cfg.CookieSecure,
-		sessionName:    "mbti_admin_session",
-		baseTemplateFS: staticFS,
-		loginLimiter:   newLoginRateLimiter(defaultLoginFailureLimit, defaultLoginCooldown),
+		store:            store,
+		userStore:        NewUserStore(db),
+		adminPassword:    cfg.AdminPassword,
+		cookieSecure:     cfg.CookieSecure,
+		sessionName:      "mbti_admin_session",
+		baseTemplateFS:   staticFS,
+		loginLimiter:     newLoginRateLimiter(defaultLoginFailureLimit, defaultLoginCooldown),
+		userLoginLimiter: newLoginRateLimiter(defaultLoginFailureLimit, defaultLoginCooldown),
+		userSessions:     newUserSessionStore(userSessionTTL),
 	}
 
 	server := &http.Server{

@@ -143,6 +143,7 @@ function applyStaticText() {
   setText("demoRunBtn", t("ui.admin.demoRun", "Demo run"));
   setText("demoCancelBtn", t("ui.admin.demoCancel", "Cancel"));
   renderDemoTypeOptions();
+  if (typeof applyAuthStaticText === "function") applyAuthStaticText();
 
   const trust = E("trustNote");
   if (trust) {

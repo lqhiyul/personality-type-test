@@ -8,6 +8,7 @@ function init() {
   renderQuiz();
   updateProgress({ persist: false });
   wireEvents();
+  if (typeof initAuth === "function") initAuth();
   setAdminCardVisible(false);
   applyRoute({ replace: true });
 }

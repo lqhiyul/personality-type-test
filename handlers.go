@@ -20,12 +20,15 @@ import (
 )
 
 type App struct {
-	store          *Store
-	adminPassword  string
-	cookieSecure   bool
-	sessionName    string
-	baseTemplateFS fs.FS
-	loginLimiter   *loginRateLimiter
+	store            *Store
+	userStore        *UserStore
+	adminPassword    string
+	cookieSecure     bool
+	sessionName      string
+	baseTemplateFS   fs.FS
+	loginLimiter     *loginRateLimiter
+	userLoginLimiter *loginRateLimiter
+	userSessions     *userSessionStore
 }
 
 type submitRequest struct {
@@ -75,6 +78,10 @@ func (a *App) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", a.handleHealthz)
 	mux.HandleFunc("/api/submit", a.handleSubmit)
+	mux.HandleFunc("/api/auth/register", a.handleAuthRegister)
+	mux.HandleFunc("/api/auth/login", a.handleAuthLogin)
+	mux.HandleFunc("/api/auth/logout", a.handleAuthLogout)
+	mux.HandleFunc("/api/auth/me", a.handleAuthMe)
 	mux.HandleFunc("/api/login", a.handleLogin)
 	mux.HandleFunc("/api/logout", a.handleLogout)
 	mux.HandleFunc("/api/results/export", a.handleExportResults)

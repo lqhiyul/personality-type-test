@@ -4,6 +4,10 @@ const API = {
   logout: "/api/logout",
   results: "/api/results",
   export: "/api/results/export",
+  authRegister: "/api/auth/register",
+  authLogin: "/api/auth/login",
+  authLogout: "/api/auth/logout",
+  authMe: "/api/auth/me",
 };
 
 async function requestJSON(url, options = {}) {
@@ -46,4 +50,20 @@ function deleteStoredResult(id) {
 
 function fetchResultsExport(format = "csv") {
   return fetch(format === "json" ? `${API.export}?format=json` : API.export);
+}
+
+function registerAccount(payload) {
+  return requestJSON(API.authRegister, { method: "POST", body: payload });
+}
+
+function loginAccount(payload) {
+  return requestJSON(API.authLogin, { method: "POST", body: payload });
+}
+
+function logoutAccount() {
+  return fetch(API.authLogout, { method: "POST" });
+}
+
+function fetchCurrentAccount() {
+  return fetch(API.authMe);
 }

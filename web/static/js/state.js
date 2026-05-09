@@ -48,6 +48,9 @@ const state = {
   activeType: "",
   adminCardVisible: false,
   adminAccessOpen: false,
+  authPanelOpen: false,
+  authMode: "login",
+  currentUser: null,
   demoRunId: 0,
   demoRunning: false,
   compatibility: {

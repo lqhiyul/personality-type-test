@@ -18,6 +18,11 @@ type User struct {
 	UpdatedAt   time.Time
 }
 
+type userAuthRecord struct {
+	User
+	PasswordHash string
+}
+
 type CreateUserParams struct {
 	Username     string
 	Email        string
@@ -86,6 +91,14 @@ func (s *UserStore) GetUserByUsername(ctx context.Context, username string) (Use
 
 func (s *UserStore) GetUserByEmail(ctx context.Context, email string) (User, error) {
 	return s.queryUser(ctx, "email = ?", email)
+}
+
+func (s *UserStore) getUserAuthByUsername(ctx context.Context, username string) (userAuthRecord, error) {
+	return s.queryUserAuth(ctx, "username = ?", username)
+}
+
+func (s *UserStore) getUserAuthByEmail(ctx context.Context, email string) (userAuthRecord, error) {
+	return s.queryUserAuth(ctx, "email = ?", email)
 }
 
 func (s *UserStore) CreateUserTestResult(ctx context.Context, params CreateUserTestResultParams) (UserTestResult, error) {
@@ -168,6 +181,29 @@ func (s *UserStore) queryUser(ctx context.Context, where string, args ...any) (U
 	return user, nil
 }
 
+func (s *UserStore) queryUserAuth(ctx context.Context, where string, args ...any) (userAuthRecord, error) {
+	query := `
+		SELECT
+			id,
+			username,
+			email,
+			password_hash,
+			COALESCE(display_name, ''),
+			COALESCE(bio, ''),
+			COALESCE(avatar_key, ''),
+			created_at,
+			updated_at
+		FROM users
+		WHERE ` + where + `
+		LIMIT 1
+	`
+	user, err := scanUserAuth(s.db.QueryRowContext(ctx, query, args...))
+	if err != nil {
+		return userAuthRecord{}, fmt.Errorf("query user auth record: %w", err)
+	}
+	return user, nil
+}
+
 func (s *UserStore) queryUserTestResult(ctx context.Context, where string, args ...any) (UserTestResult, error) {
 	query := `
 		SELECT
@@ -221,6 +257,36 @@ func scanUser(row rowScanner) (User, error) {
 		return User{}, err
 	}
 	return user, nil
+}
+
+func scanUserAuth(row rowScanner) (userAuthRecord, error) {
+	var record userAuthRecord
+	var createdAt string
+	var updatedAt string
+	if err := row.Scan(
+		&record.ID,
+		&record.Username,
+		&record.Email,
+		&record.PasswordHash,
+		&record.DisplayName,
+		&record.Bio,
+		&record.AvatarKey,
+		&createdAt,
+		&updatedAt,
+	); err != nil {
+		return userAuthRecord{}, err
+	}
+
+	var err error
+	record.CreatedAt, err = parseDBTime(createdAt)
+	if err != nil {
+		return userAuthRecord{}, err
+	}
+	record.UpdatedAt, err = parseDBTime(updatedAt)
+	if err != nil {
+		return userAuthRecord{}, err
+	}
+	return record, nil
 }
 
 func scanUserTestResult(row rowScanner) (UserTestResult, error) {

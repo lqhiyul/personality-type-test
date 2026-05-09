@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"io/fs"
@@ -22,17 +23,26 @@ func newTestApp(t *testing.T) *App {
 		t.Fatalf("NewStore() error = %v", err)
 	}
 
+	db, err := OpenAppDB(context.Background(), filepath.Join(t.TempDir(), "app.db"))
+	if err != nil {
+		t.Fatalf("OpenAppDB() error = %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
 	sub, err := fs.Sub(staticFiles, "web/static")
 	if err != nil {
 		t.Fatalf("fs.Sub() error = %v", err)
 	}
 
 	return &App{
-		store:          store,
-		adminPassword:  "secret",
-		sessionName:    "test_admin_session_" + newID(),
-		baseTemplateFS: sub,
-		loginLimiter:   newLoginRateLimiter(defaultLoginFailureLimit, defaultLoginCooldown),
+		store:            store,
+		userStore:        NewUserStore(db),
+		adminPassword:    "secret",
+		sessionName:      "test_admin_session_" + newID(),
+		baseTemplateFS:   sub,
+		loginLimiter:     newLoginRateLimiter(defaultLoginFailureLimit, defaultLoginCooldown),
+		userLoginLimiter: newLoginRateLimiter(defaultLoginFailureLimit, defaultLoginCooldown),
+		userSessions:     newUserSessionStore(userSessionTTL),
 	}
 }
 
@@ -452,7 +462,7 @@ func TestBuildStatsAggregatesMultipleResults(t *testing.T) {
 func TestStaticAssetsServed(t *testing.T) {
 	app := newTestApp(t)
 	targets := []string{"/", "/compatibility-engine.js", "/content-uk.js", "/content-ru.js", "/content-en.js", "/content-author.js", "/content-profiles-uk.js", "/content-profiles-ru.js", "/content-profiles-en.js", "/style.css", "/types-data.js"}
-	for _, target := range []string{"/js/api.js", "/js/state.js", "/js/dom.js", "/js/utils.js", "/js/i18n.js", "/js/ui.js", "/js/results.js", "/js/compatibility.js", "/js/quiz.js", "/js/types.js", "/js/admin.js", "/js/share.js", "/js/events.js", "/js/app.js"} {
+	for _, target := range []string{"/js/api.js", "/js/state.js", "/js/dom.js", "/js/utils.js", "/js/i18n.js", "/js/ui.js", "/js/results.js", "/js/compatibility.js", "/js/quiz.js", "/js/types.js", "/js/admin.js", "/js/auth.js", "/js/share.js", "/js/events.js", "/js/app.js"} {
 		targets = append(targets, target)
 	}
 	for _, code := range []string{"intj", "intp", "entj", "entp", "infj", "infp", "enfj", "enfp", "istj", "isfj", "estj", "esfj", "istp", "isfp", "estp", "esfp"} {
