@@ -199,6 +199,74 @@ func TestUserStoreCreateAndListUserTestResults(t *testing.T) {
 	}
 }
 
+func TestUserStoreSetPrimaryAndDeleteUserTestResults(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	_, store := newTestUserStore(t)
+	user, err := store.CreateUser(ctx, CreateUserParams{
+		Username:     "alice",
+		Email:        "alice@example.com",
+		PasswordHash: "hash",
+	})
+	if err != nil {
+		t.Fatalf("CreateUser() error = %v", err)
+	}
+	otherUser, err := store.CreateUser(ctx, CreateUserParams{
+		Username:     "bob",
+		Email:        "bob@example.com",
+		PasswordHash: "hash",
+	})
+	if err != nil {
+		t.Fatalf("CreateUser(other) error = %v", err)
+	}
+
+	first, err := store.CreateUserTestResult(ctx, CreateUserTestResultParams{UserID: user.ID, MBTIType: "INTJ"})
+	if err != nil {
+		t.Fatalf("CreateUserTestResult(first) error = %v", err)
+	}
+	second, err := store.CreateUserTestResult(ctx, CreateUserTestResultParams{UserID: user.ID, MBTIType: "ENFP"})
+	if err != nil {
+		t.Fatalf("CreateUserTestResult(second) error = %v", err)
+	}
+	other, err := store.CreateUserTestResult(ctx, CreateUserTestResultParams{UserID: otherUser.ID, MBTIType: "ISFJ"})
+	if err != nil {
+		t.Fatalf("CreateUserTestResult(other) error = %v", err)
+	}
+
+	if _, err := store.SetPrimaryUserTestResult(ctx, user.ID, other.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected setting another user's result as primary to fail with sql.ErrNoRows, got %v", err)
+	}
+	if _, err := store.SetPrimaryUserTestResult(ctx, user.ID, first.ID); err != nil {
+		t.Fatalf("SetPrimaryUserTestResult(first) error = %v", err)
+	}
+	if _, err := store.SetPrimaryUserTestResult(ctx, user.ID, second.ID); err != nil {
+		t.Fatalf("SetPrimaryUserTestResult(second) error = %v", err)
+	}
+
+	firstAfter, err := store.GetUserTestResult(ctx, user.ID, first.ID)
+	if err != nil {
+		t.Fatalf("GetUserTestResult(first) error = %v", err)
+	}
+	secondAfter, err := store.GetUserTestResult(ctx, user.ID, second.ID)
+	if err != nil {
+		t.Fatalf("GetUserTestResult(second) error = %v", err)
+	}
+	if firstAfter.IsPrimary || !secondAfter.IsPrimary {
+		t.Fatalf("expected only second result to be primary, first=%+v second=%+v", firstAfter, secondAfter)
+	}
+
+	if err := store.DeleteUserTestResult(ctx, user.ID, other.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected deleting another user's result to fail with sql.ErrNoRows, got %v", err)
+	}
+	if err := store.DeleteUserTestResult(ctx, user.ID, first.ID); err != nil {
+		t.Fatalf("DeleteUserTestResult(first) error = %v", err)
+	}
+	if _, err := store.GetUserTestResult(ctx, user.ID, first.ID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected deleted result to return sql.ErrNoRows, got %v", err)
+	}
+}
+
 func TestUserStoreRequiresExistingUserForResults(t *testing.T) {
 	t.Parallel()
 

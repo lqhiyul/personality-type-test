@@ -82,6 +82,8 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("/api/auth/login", a.handleAuthLogin)
 	mux.HandleFunc("/api/auth/logout", a.handleAuthLogout)
 	mux.HandleFunc("/api/auth/me", a.handleAuthMe)
+	mux.HandleFunc("/api/me/results/", a.handleMyResultByID)
+	mux.HandleFunc("/api/me/results", a.handleMyResults)
 	mux.HandleFunc("/api/login", a.handleLogin)
 	mux.HandleFunc("/api/logout", a.handleLogout)
 	mux.HandleFunc("/api/results/export", a.handleExportResults)
@@ -188,11 +190,22 @@ func (a *App) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]any{
+	response := map[string]any{
 		"type":    profile.Type,
 		"profile": profile,
 		"result":  result,
-	})
+	}
+	if savedResult, err := a.saveLoggedInUserResult(r, profile, normalizedAnswers, result.Duration); err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "could not save result to account")
+		return
+	} else if savedResult != nil {
+		response["savedToAccount"] = true
+		response["savedResult"] = savedResult
+	} else {
+		response["savedToAccount"] = false
+	}
+
+	writeJSON(w, http.StatusOK, response)
 }
 
 func (a *App) handleLogin(w http.ResponseWriter, r *http.Request) {

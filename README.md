@@ -39,15 +39,16 @@ When those files exist, replace this note with a short screenshot gallery.
 - Hidden admin panel with login, logout, search, delete, clear, CSV export, JSON export, and demo/autopass mode.
 - In-memory login rate limiting for repeated failed admin login attempts by IP address.
 - Email/password user registration and login with bcrypt password hashing and an HttpOnly session cookie.
+- Private My Account result history for logged-in users, including primary result selection and deleting own saved results.
 - Local JSON persistence with safer temp-file writes and rename.
-- SQLite user storage prepared for later saved result history.
+- SQLite user storage for accounts and logged-in saved test results.
 - Embedded static assets, Docker support, GitHub Actions, Go tests, and JavaScript syntax checks.
 
 ## Tech Stack
 
 - **Backend:** Go 1.22, standard `net/http`, embedded static files.
 - **Frontend:** HTML, CSS, modular vanilla JavaScript.
-- **Storage:** anonymous quiz submissions use local JSON at `data/results.json`; user accounts use SQLite at `data/app.db` by default.
+- **Storage:** anonymous quiz submissions use local JSON at `data/results.json`; user accounts and logged-in saved results use SQLite at `data/app.db` by default.
 - **Tooling:** Docker, Makefile, GitHub Actions, Node-based JavaScript syntax check.
 
 ## What This Project Demonstrates
@@ -112,7 +113,7 @@ The image runs as a non-root user, exposes port `8080`, and includes a `/healthz
 | `ADDR` | empty | Exact bind address override, for example `127.0.0.1:8080`. Wins over `HOST` and `PORT`. |
 | `ADMIN_PASSWORD` | `change-me` | Password for the admin panel. Change it before public deploys. |
 | `DATA_FILE` | `data/results.json` | Path for saved quiz submissions. |
-| `DATABASE_PATH` | `data/app.db` | SQLite database path for user accounts and future saved user test results. |
+| `DATABASE_PATH` | `data/app.db` | SQLite database path for user accounts and logged-in saved test results. |
 | `COOKIE_SECURE` | `false` | Keep `false` locally. Set to `true` only behind HTTPS. |
 
 Runtime data is ignored by Git. The `data/results.json` file is created automatically after the first saved anonymous result, and `data/app.db` is created when SQLite initializes.
@@ -120,6 +121,8 @@ Runtime data is ignored by Git. The `data/results.json` file is created automati
 ## User Accounts
 
 Regular users can register and log in with username, email, and password. Passwords are stored only as bcrypt hashes in SQLite, and regular user sessions use a separate `HttpOnly` `SameSite=Lax` cookie named `user_session`.
+
+When a logged-in user completes the quiz, the app keeps the existing anonymous JSON save and also stores a private copy in SQLite. The Account panel shows the current user's saved result history, latest result, optional primary type, and actions to mark a result as primary or delete one of their own results.
 
 The regular user auth endpoints are separate from the admin endpoints:
 
@@ -129,8 +132,11 @@ The regular user auth endpoints are separate from the admin endpoints:
 | `POST` | `/api/auth/login` | Log in by email or username. |
 | `POST` | `/api/auth/logout` | Clear the regular user session. |
 | `GET` | `/api/auth/me` | Return the current logged-in user. |
+| `GET` | `/api/me/results` | List the current user's saved test results. |
+| `POST` | `/api/me/results/{id}/primary` | Mark one of the current user's saved results as primary. |
+| `DELETE` | `/api/me/results/{id}` | Delete one of the current user's saved results. |
 
-The current anonymous quiz flow still saves submissions through the existing JSON `DATA_FILE` store, so the admin list, export, delete, clear, and stats tools continue to use the same behavior as before. Saved result history for logged-in users is not connected yet.
+The current anonymous quiz flow still saves submissions through the existing JSON `DATA_FILE` store, so the admin list, export, delete, clear, and stats tools continue to use the same behavior as before. Logged-in result history is private to the current user and is not exposed through public profile endpoints.
 
 Set `DATABASE_PATH` to move the SQLite file. If it is empty, the app falls back to `data/app.db`. The default `data/` directory is ignored by Git, so runtime database files should not be committed.
 
@@ -206,6 +212,7 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 +-- sessions.go
 +-- store.go
 +-- user_auth_handlers.go
++-- user_results_handlers.go
 +-- user_sessions.go
 +-- user_store.go
 +-- *_test.go
@@ -224,6 +231,9 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 | `POST` | `/api/auth/login` | Log in a regular user by email or username. |
 | `POST` | `/api/auth/logout` | Log out the regular user. |
 | `GET` | `/api/auth/me` | Return the current regular user. |
+| `GET` | `/api/me/results` | Return the current user's saved result history. |
+| `POST` | `/api/me/results/{id}/primary` | Set the current user's primary saved result. |
+| `DELETE` | `/api/me/results/{id}` | Delete one saved result owned by the current user. |
 | `POST` | `/api/login` | Admin login with failed-attempt rate limiting. |
 | `POST` | `/api/logout` | Admin logout and session cookie cleanup. |
 | `GET` | `/api/results` | List saved results. |
@@ -239,6 +249,7 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 - Admin results, export, delete, clear, and stats endpoints require an active admin session.
 - Regular user passwords are hashed with bcrypt before storage.
 - Regular user auth uses a separate `user_session` cookie from the admin session cookie.
+- Saved result history endpoints require a regular user session and scope every list, primary, and delete action by the current user ID.
 - Failed admin and regular user login attempts are rate-limited in memory per IP address.
 - Session cookies are `HttpOnly` and `SameSite=Lax`.
 - Set `COOKIE_SECURE=true` only when the app is served behind HTTPS.
@@ -248,9 +259,9 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 
 - This is an educational/self-reflection tool, not a medical, psychological, or scientific diagnosis.
 - JSON file storage is simple and reviewable, but it is not ideal for multi-instance deployments.
-- Anonymous submissions still use the JSON store; logged-in saved result history is not connected yet.
+- Anonymous submissions still use the JSON store; logged-in saved history is stored separately in SQLite.
 - Sessions and login rate limits are in memory, so they reset when the process restarts.
-- There is no Google OAuth, email verification, password reset, public profile, friends, comments, or messages yet.
+- There is no Google OAuth, email verification, password reset, public profile, editable profile, friends, comments, or messages yet.
 - SQLite account data needs persistent storage on Render if it must survive restarts or redeploys.
 - Real screenshots still need to be captured manually before the README has a full visual gallery.
 - Stats are computed from the saved JSON result fields; missing legacy timestamps are omitted from `latestResultAt`.
@@ -260,7 +271,7 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 - Add real screenshots or a short GIF from the running app.
 - Add a lightweight browser smoke test when it is worth the extra tooling.
 - Add pagination for admin results if the JSON file grows.
-- Connect completed quiz results to logged-in users and build a small private account history view.
+- Add a carefully scoped next account feature, such as editable private profile fields or public profile previews.
 
 ## Author
 

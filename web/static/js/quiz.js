@@ -142,5 +142,11 @@ async function submitQuiz() {
   }
   clearDraft();
   showResult(data.type, name, data.profile);
+  if (data.savedToAccount) {
+    showToast(t("ui.auth.profile.saved", "Saved to your account"), { title: t("ui.auth.done", "Done"), duration: 2400 });
+    if (typeof loadProfileResults === "function") {
+      loadProfileResults({ silent: true }).catch(() => {});
+    }
+  }
   refreshAdmin();
 }

@@ -8,6 +8,7 @@ const API = {
   authLogin: "/api/auth/login",
   authLogout: "/api/auth/logout",
   authMe: "/api/auth/me",
+  myResults: "/api/me/results",
 };
 
 async function requestJSON(url, options = {}) {
@@ -66,4 +67,16 @@ function logoutAccount() {
 
 function fetchCurrentAccount() {
   return fetch(API.authMe);
+}
+
+function fetchMyResults() {
+  return fetch(API.myResults);
+}
+
+function setPrimaryMyResult(id) {
+  return requestJSON(`${API.myResults}/${encodeURIComponent(id)}/primary`, { method: "POST" });
+}
+
+function deleteMyResult(id) {
+  return fetch(`${API.myResults}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }

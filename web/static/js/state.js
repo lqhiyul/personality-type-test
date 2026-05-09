@@ -51,6 +51,8 @@ const state = {
   authPanelOpen: false,
   authMode: "login",
   currentUser: null,
+  profileResults: [],
+  profileLoading: false,
   demoRunId: 0,
   demoRunning: false,
   compatibility: {
