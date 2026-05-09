@@ -53,6 +53,12 @@ const state = {
   currentUser: null,
   profileResults: [],
   profileLoading: false,
+  publicProfile: null,
+  publicProfileLoading: false,
+  publicProfileError: "",
+  publicProfileUsername: "",
+  profileEditOpen: false,
+  profileEditAvatarKey: "gradient-violet",
   demoRunId: 0,
   demoRunning: false,
   compatibility: {

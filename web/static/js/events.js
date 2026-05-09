@@ -37,6 +37,7 @@ function wireEvents() {
   E("personName")?.addEventListener("input", saveDraft);
   E("adminSearch")?.addEventListener("input", renderAdminResults);
   if (typeof wireAuthEvents === "function") wireAuthEvents();
+  if (typeof wireProfileEvents === "function") wireProfileEvents();
 
   document.querySelectorAll("[data-lang]").forEach((button) => {
     button.addEventListener("click", () => setLanguage(button.dataset.lang));

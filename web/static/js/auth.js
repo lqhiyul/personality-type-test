@@ -43,6 +43,8 @@ function applyAuthStaticText() {
   setText("authEmailLabel", authLabel("email", "Email"));
   setText("authPasswordLabel", authLabel("password", "Password"));
   setText("authLogoutBtn", authLabel("logout", "Log out"));
+  setText("viewPublicProfileBtn", profileLabel("viewPublicProfile", "View public profile"));
+  setText("copyPublicProfileBtn", profileLabel("copyPublicProfile", "Copy profile link"));
   setText("profilePrimaryLabel", profileLabel("primaryLabel", "Primary type"));
   setText("profileRefreshBtn", profileLabel("refresh", "Refresh"));
   setText("profileResultsTitle", profileLabel("historyTitle", "Result history"));
@@ -79,9 +81,15 @@ function renderAuthPanel() {
   if (user) {
     setText("accountName", user.displayName || user.username);
     setText("accountEmail", user.email || "");
-    setText("accountAvatar", (user.username || "A").slice(0, 1).toUpperCase());
+    const avatar = E("accountAvatar");
+    if (avatar) {
+      const key = typeof avatarKeyOrDefault === "function" ? avatarKeyOrDefault(user.avatarKey) : "";
+      avatar.className = `account-avatar ${key && typeof avatarClass === "function" ? avatarClass(key) : ""}`.trim();
+      avatar.textContent = typeof avatarSymbolFor === "function" ? avatarSymbolFor(key, user.username) : (user.username || "A").slice(0, 1).toUpperCase();
+    }
     renderProfileResults();
   }
+  if (typeof renderPublicProfile === "function" && state.publicProfile && !E("profileSection")?.hidden) renderPublicProfile();
 }
 
 function renderProfileResults() {
@@ -95,7 +103,7 @@ function renderProfileResults() {
   const newest = results[0];
 
   primaryType.textContent = primary
-    ? `${primary.mbtiType} · ${getTypeName(primary.mbtiType)}`
+    ? `${primary.mbtiType} - ${getTypeName(primary.mbtiType)}`
     : profileLabel("primaryEmpty", "Not selected");
 
   if (state.profileLoading) {
@@ -118,7 +126,7 @@ function renderProfileResults() {
         <div class="profile-result__type">${esc(result.mbtiType)}</div>
         <div>
           <strong>${esc(getTypeName(result.mbtiType))}</strong>
-          <span>${esc(formatDate(result.createdAt))} · ${esc(formatDuration(result.durationSeconds))}</span>
+          <span>${esc(formatDate(result.createdAt))} - ${esc(formatDuration(result.durationSeconds))}</span>
         </div>
       </div>
       <div class="profile-result__actions">
@@ -243,6 +251,15 @@ function wireAuthEvents() {
   E("accountCloseBtn")?.addEventListener("click", () => setAuthPanelOpen(false));
   E("authLoginModeBtn")?.addEventListener("click", () => setAuthMode("login"));
   E("authRegisterModeBtn")?.addEventListener("click", () => setAuthMode("register"));
+  E("viewPublicProfileBtn")?.addEventListener("click", () => {
+    if (!state.currentUser?.username || typeof openPublicProfile !== "function") return;
+    setAuthPanelOpen(false);
+    openPublicProfile(state.currentUser.username);
+  });
+  E("copyPublicProfileBtn")?.addEventListener("click", () => {
+    if (!state.currentUser?.username || typeof copyProfileLink !== "function") return;
+    copyProfileLink(state.currentUser.username);
+  });
   E("profileRefreshBtn")?.addEventListener("click", () => loadProfileResults().catch((error) => showToast(error.message, { title: authLabel("error", "Account error"), tone: "error" })));
   E("authLogoutBtn")?.addEventListener("click", () => logoutUserAccount().catch((error) => showToast(error.message, { title: authLabel("error", "Account error"), tone: "error" })));
   E("authForm")?.addEventListener("submit", (event) => {

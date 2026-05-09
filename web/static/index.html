@@ -72,6 +72,10 @@
               <span id="accountEmail"></span>
             </div>
           </div>
+          <div class="account-profile-links">
+            <button type="button" class="account-link-btn" id="viewPublicProfileBtn">View public profile</button>
+            <button type="button" class="account-link-btn" id="copyPublicProfileBtn">Copy profile link</button>
+          </div>
           <section class="profile-results" aria-labelledby="profileResultsTitle">
             <div class="profile-results__head">
               <div>
@@ -122,6 +126,12 @@
       <div class="eyebrow" id="compatibilityEyebrow">Динаміка взаємодії</div>
       <h1 id="compatibilityTitle">Сумісність типів</h1>
       <p id="compatibilityCopy">Порівняйте два типи в дружбі, стосунках або роботі як спокійну гіпотезу про взаємодію, не як вирок.</p>
+    </header>
+
+    <header class="hero" id="profileHero" hidden>
+      <div class="eyebrow" id="profileEyebrow">Public profile</div>
+      <h1 id="profileTitle">Personality profile</h1>
+      <p id="profileCopy">A safe public summary shared by username.</p>
     </header>
 
     <section class="layout" id="quizSection" role="tabpanel" aria-labelledby="tabQuiz">
@@ -240,6 +250,8 @@
 
     <section id="compatibilitySection" class="compatibility-section" role="tabpanel" aria-labelledby="tabCompatibility" hidden></section>
 
+    <section id="profileSection" class="public-profile-section" hidden></section>
+
     <section class="trust-note" id="trustNote" aria-label="Privacy and disclaimer"></section>
     <footer class="footer" id="footerText"></footer>
   </main>
@@ -266,6 +278,7 @@
   <script src="js/types.js"></script>
   <script src="js/admin.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/profile.js"></script>
   <script src="js/share.js"></script>
   <script src="js/events.js"></script>
   <script src="js/app.js"></script>

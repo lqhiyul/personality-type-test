@@ -9,6 +9,8 @@ const API = {
   authLogout: "/api/auth/logout",
   authMe: "/api/auth/me",
   myResults: "/api/me/results",
+  myProfile: "/api/me/profile",
+  users: "/api/users",
 };
 
 async function requestJSON(url, options = {}) {
@@ -79,4 +81,12 @@ function setPrimaryMyResult(id) {
 
 function deleteMyResult(id) {
   return fetch(`${API.myResults}/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+function fetchPublicProfile(username) {
+  return fetch(`${API.users}/${encodeURIComponent(username)}`);
+}
+
+function updateMyProfile(payload) {
+  return requestJSON(API.myProfile, { method: "PATCH", body: payload });
 }

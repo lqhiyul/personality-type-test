@@ -40,6 +40,7 @@ When those files exist, replace this note with a short screenshot gallery.
 - In-memory login rate limiting for repeated failed admin login attempts by IP address.
 - Email/password user registration and login with bcrypt password hashing and an HttpOnly session cookie.
 - Private My Account result history for logged-in users, including primary result selection and deleting own saved results.
+- Public username profiles with editable display name, short bio, avatar preset, and optional primary MBTI result.
 - Local JSON persistence with safer temp-file writes and rename.
 - SQLite user storage for accounts and logged-in saved test results.
 - Embedded static assets, Docker support, GitHub Actions, Go tests, and JavaScript syntax checks.
@@ -124,6 +125,8 @@ Regular users can register and log in with username, email, and password. Passwo
 
 When a logged-in user completes the quiz, the app keeps the existing anonymous JSON save and also stores a private copy in SQLite. The Account panel shows the current user's saved result history, latest result, optional primary type, and actions to mark a result as primary or delete one of their own results.
 
+Users can also open a public profile at `/?profile=username`. Public profiles show only safe public data: username, display name, bio, avatar preset, completed test count, and the selected primary MBTI type if one exists. Email, password hashes, private answers, and full saved result history are not public.
+
 The regular user auth endpoints are separate from the admin endpoints:
 
 | Method | Route | Description |
@@ -132,11 +135,13 @@ The regular user auth endpoints are separate from the admin endpoints:
 | `POST` | `/api/auth/login` | Log in by email or username. |
 | `POST` | `/api/auth/logout` | Clear the regular user session. |
 | `GET` | `/api/auth/me` | Return the current logged-in user. |
+| `PATCH` | `/api/me/profile` | Update the current user's public display name, bio, and avatar preset. |
 | `GET` | `/api/me/results` | List the current user's saved test results. |
 | `POST` | `/api/me/results/{id}/primary` | Mark one of the current user's saved results as primary. |
 | `DELETE` | `/api/me/results/{id}` | Delete one of the current user's saved results. |
+| `GET` | `/api/users/{username}` | Return a safe public profile by username. |
 
-The current anonymous quiz flow still saves submissions through the existing JSON `DATA_FILE` store, so the admin list, export, delete, clear, and stats tools continue to use the same behavior as before. Logged-in result history is private to the current user and is not exposed through public profile endpoints.
+The current anonymous quiz flow still saves submissions through the existing JSON `DATA_FILE` store, so the admin list, export, delete, clear, and stats tools continue to use the same behavior as before. Logged-in result history is private to the current user; the public profile shows only the selected primary type and aggregate count.
 
 Set `DATABASE_PATH` to move the SQLite file. If it is empty, the app falls back to `data/app.db`. The default `data/` directory is ignored by Git, so runtime database files should not be committed.
 
@@ -190,6 +195,7 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 |   |   +-- dom.js
 |   |   +-- events.js
 |   |   +-- i18n.js
+|   |   +-- profile.js
 |   |   +-- quiz.js
 |   |   +-- results.js
 |   |   +-- share.js
@@ -212,6 +218,7 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 +-- sessions.go
 +-- store.go
 +-- user_auth_handlers.go
++-- user_profile_handlers.go
 +-- user_results_handlers.go
 +-- user_sessions.go
 +-- user_store.go
@@ -231,9 +238,11 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 | `POST` | `/api/auth/login` | Log in a regular user by email or username. |
 | `POST` | `/api/auth/logout` | Log out the regular user. |
 | `GET` | `/api/auth/me` | Return the current regular user. |
+| `PATCH` | `/api/me/profile` | Update the current user's public profile fields. |
 | `GET` | `/api/me/results` | Return the current user's saved result history. |
 | `POST` | `/api/me/results/{id}/primary` | Set the current user's primary saved result. |
 | `DELETE` | `/api/me/results/{id}` | Delete one saved result owned by the current user. |
+| `GET` | `/api/users/{username}` | Return safe public profile data by username. |
 | `POST` | `/api/login` | Admin login with failed-attempt rate limiting. |
 | `POST` | `/api/logout` | Admin logout and session cookie cleanup. |
 | `GET` | `/api/results` | List saved results. |
@@ -250,6 +259,8 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 - Regular user passwords are hashed with bcrypt before storage.
 - Regular user auth uses a separate `user_session` cookie from the admin session cookie.
 - Saved result history endpoints require a regular user session and scope every list, primary, and delete action by the current user ID.
+- Public profile responses never include email, password hashes, private answers, or full saved result history.
+- Profile editing is limited to display name, bio, and a fixed allowlist of CSS avatar presets. There are no custom avatar uploads.
 - Failed admin and regular user login attempts are rate-limited in memory per IP address.
 - Session cookies are `HttpOnly` and `SameSite=Lax`.
 - Set `COOKIE_SECURE=true` only when the app is served behind HTTPS.
@@ -261,7 +272,7 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 - JSON file storage is simple and reviewable, but it is not ideal for multi-instance deployments.
 - Anonymous submissions still use the JSON store; logged-in saved history is stored separately in SQLite.
 - Sessions and login rate limits are in memory, so they reset when the process restarts.
-- There is no Google OAuth, email verification, password reset, public profile, editable profile, friends, comments, or messages yet.
+- There is no Google OAuth, email verification, password reset, custom avatar upload, friends, comments, or messages yet.
 - SQLite account data needs persistent storage on Render if it must survive restarts or redeploys.
 - Real screenshots still need to be captured manually before the README has a full visual gallery.
 - Stats are computed from the saved JSON result fields; missing legacy timestamps are omitted from `latestResultAt`.
@@ -271,7 +282,7 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 - Add real screenshots or a short GIF from the running app.
 - Add a lightweight browser smoke test when it is worth the extra tooling.
 - Add pagination for admin results if the JSON file grows.
-- Add a carefully scoped next account feature, such as editable private profile fields or public profile previews.
+- Add a carefully scoped next account feature, such as email verification, password reset, or OAuth.
 
 ## Author
 

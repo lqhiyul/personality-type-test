@@ -462,7 +462,7 @@ func TestBuildStatsAggregatesMultipleResults(t *testing.T) {
 func TestStaticAssetsServed(t *testing.T) {
 	app := newTestApp(t)
 	targets := []string{"/", "/compatibility-engine.js", "/content-uk.js", "/content-ru.js", "/content-en.js", "/content-author.js", "/content-profiles-uk.js", "/content-profiles-ru.js", "/content-profiles-en.js", "/style.css", "/types-data.js"}
-	for _, target := range []string{"/js/api.js", "/js/state.js", "/js/dom.js", "/js/utils.js", "/js/i18n.js", "/js/ui.js", "/js/results.js", "/js/compatibility.js", "/js/quiz.js", "/js/types.js", "/js/admin.js", "/js/auth.js", "/js/share.js", "/js/events.js", "/js/app.js"} {
+	for _, target := range []string{"/js/api.js", "/js/state.js", "/js/dom.js", "/js/utils.js", "/js/i18n.js", "/js/ui.js", "/js/results.js", "/js/compatibility.js", "/js/quiz.js", "/js/types.js", "/js/admin.js", "/js/auth.js", "/js/profile.js", "/js/share.js", "/js/events.js", "/js/app.js"} {
 		targets = append(targets, target)
 	}
 	for _, code := range []string{"intj", "intp", "entj", "entp", "infj", "infp", "enfj", "enfp", "istj", "isfj", "estj", "esfj", "istp", "isfp", "estp", "esfp"} {

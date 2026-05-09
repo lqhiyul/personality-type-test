@@ -32,6 +32,12 @@ type CreateUserParams struct {
 	AvatarKey    string
 }
 
+type UpdateUserProfileParams struct {
+	DisplayName string
+	Bio         string
+	AvatarKey   string
+}
+
 type UserTestResult struct {
 	ID              int64
 	UserID          int64
@@ -91,6 +97,26 @@ func (s *UserStore) GetUserByUsername(ctx context.Context, username string) (Use
 
 func (s *UserStore) GetUserByEmail(ctx context.Context, email string) (User, error) {
 	return s.queryUser(ctx, "email = ?", email)
+}
+
+func (s *UserStore) UpdateUserProfile(ctx context.Context, id int64, params UpdateUserProfileParams) (User, error) {
+	updatedAt := formatDBTime(s.now())
+	res, err := s.db.ExecContext(ctx, `
+		UPDATE users
+		SET display_name = ?, bio = ?, avatar_key = ?, updated_at = ?
+		WHERE id = ?
+	`, params.DisplayName, params.Bio, params.AvatarKey, updatedAt, id)
+	if err != nil {
+		return User{}, fmt.Errorf("update user profile: %w", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return User{}, fmt.Errorf("read updated user profile rows: %w", err)
+	}
+	if rows == 0 {
+		return User{}, sql.ErrNoRows
+	}
+	return s.GetUserByID(ctx, id)
 }
 
 func (s *UserStore) getUserAuthByUsername(ctx context.Context, username string) (userAuthRecord, error) {
@@ -201,6 +227,18 @@ func (s *UserStore) ListUserTestResults(ctx context.Context, userID int64) ([]Us
 
 func (s *UserStore) GetUserTestResult(ctx context.Context, userID, resultID int64) (UserTestResult, error) {
 	return s.queryUserTestResult(ctx, "user_id = ? AND id = ?", userID, resultID)
+}
+
+func (s *UserStore) GetPrimaryUserTestResult(ctx context.Context, userID int64) (UserTestResult, error) {
+	return s.queryUserTestResult(ctx, "user_id = ? AND is_primary = 1 ORDER BY created_at DESC, id DESC", userID)
+}
+
+func (s *UserStore) CountUserTestResults(ctx context.Context, userID int64) (int, error) {
+	var count int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM user_test_results WHERE user_id = ?`, userID).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count user test results: %w", err)
+	}
+	return count, nil
 }
 
 func (s *UserStore) SetPrimaryUserTestResult(ctx context.Context, userID, resultID int64) (UserTestResult, error) {
