@@ -395,6 +395,96 @@
     }
   };
 
+  const messagesPatch = {
+    uk: {
+      messages: {
+        eyebrow: "Вхідні",
+        title: "Повідомлення",
+        refresh: "Оновити",
+        loading: "Завантаження розмов...",
+        loadingMessages: "Завантаження повідомлень...",
+        noConversations: "Розмов поки немає",
+        noMessages: "Повідомлень поки немає",
+        selectConversation: "Оберіть розмову",
+        write: "Напишіть повідомлення",
+        send: "Надіслати",
+        delete: "Видалити повідомлення",
+        deleteConfirm: "Видалити це повідомлення?",
+        limit: "До 1000 символів",
+        messageUser: "Написати",
+        loginPrompt: "Увійдіть, щоб надіслати повідомлення",
+        opened: "Розмову відкрито",
+        empty: "Повідомлення не може бути порожнім",
+        tooLong: "Повідомлення занадто довге",
+        loadFailed: "Не вдалося завантажити розмови",
+        threadLoadFailed: "Не вдалося завантажити розмову",
+        startFailed: "Не вдалося почати розмову",
+        sendFailed: "Не вдалося надіслати повідомлення",
+        deleteFailed: "Не вдалося видалити повідомлення",
+        unknownUser: "Користувач",
+        error: "Помилка повідомлень"
+      }
+    },
+    ru: {
+      messages: {
+        eyebrow: "Входящие",
+        title: "Сообщения",
+        refresh: "Обновить",
+        loading: "Загрузка разговоров...",
+        loadingMessages: "Загрузка сообщений...",
+        noConversations: "Разговоров пока нет",
+        noMessages: "Сообщений пока нет",
+        selectConversation: "Выберите разговор",
+        write: "Напишите сообщение",
+        send: "Отправить",
+        delete: "Удалить сообщение",
+        deleteConfirm: "Удалить это сообщение?",
+        limit: "До 1000 символов",
+        messageUser: "Написать",
+        loginPrompt: "Войдите, чтобы отправлять сообщения",
+        opened: "Разговор открыт",
+        empty: "Сообщение не может быть пустым",
+        tooLong: "Сообщение слишком длинное",
+        loadFailed: "Не удалось загрузить разговоры",
+        threadLoadFailed: "Не удалось загрузить разговор",
+        startFailed: "Не удалось начать разговор",
+        sendFailed: "Не удалось отправить сообщение",
+        deleteFailed: "Не удалось удалить сообщение",
+        unknownUser: "Пользователь",
+        error: "Ошибка сообщений"
+      }
+    },
+    en: {
+      messages: {
+        eyebrow: "Inbox",
+        title: "Messages",
+        refresh: "Refresh",
+        loading: "Loading conversations...",
+        loadingMessages: "Loading messages...",
+        noConversations: "No conversations yet",
+        noMessages: "No messages yet",
+        selectConversation: "Select a conversation",
+        write: "Write a message",
+        send: "Send",
+        delete: "Delete message",
+        deleteConfirm: "Delete this message?",
+        limit: "1000 characters max",
+        messageUser: "Message this user",
+        loginPrompt: "Log in to send messages",
+        opened: "Conversation opened",
+        empty: "Message cannot be empty",
+        tooLong: "Message is too long",
+        loadFailed: "Could not load conversations",
+        threadLoadFailed: "Could not load conversation",
+        startFailed: "Could not start conversation",
+        sendFailed: "Could not send message",
+        deleteFailed: "Could not delete message",
+        unknownUser: "User",
+        error: "Messages error"
+      }
+    }
+  };
+
   const explanations = ["energy", "group entry", "idea processing", "social start", "team rhythm", "idea sharing", "stimulation", "evidence", "attention", "learning", "future project", "idea quality", "problem frame", "solution value", "decision filter", "hard truth", "conflict", "mistakes", "feedback", "team trust", "efficiency and comfort", "task load", "deadlines", "starting work", "rest", "change", "work rhythm", "everyday rhythm"];
 
   function toQuestion(row, index) {
@@ -445,6 +535,7 @@
     deepMerge(content.ui, uiPatch[lang]);
     deepMerge(content.ui, uiPolishPatch[lang]);
     deepMerge(content.ui, profileCommentsPatch[lang]);
+    deepMerge(content.ui, messagesPatch[lang]);
     content.title = uiPatch[lang].title;
     content.description = uiPatch[lang].description;
     content.questions = questionRows[lang].map(toQuestion);

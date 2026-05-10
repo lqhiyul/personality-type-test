@@ -39,6 +39,7 @@ function wireEvents() {
   if (typeof wireAuthEvents === "function") wireAuthEvents();
   if (typeof wireProfileEvents === "function") wireProfileEvents();
   if (typeof wireFriendsEvents === "function") wireFriendsEvents();
+  if (typeof wireMessagesEvents === "function") wireMessagesEvents();
 
   document.querySelectorAll("[data-lang]").forEach((button) => {
     button.addEventListener("click", () => setLanguage(button.dataset.lang));
