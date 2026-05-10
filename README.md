@@ -8,7 +8,7 @@
 
 Note: The Render free plan may spin down after inactivity, so the first request can take 30–60 seconds.
 
-A lightweight full-stack personality type test with a Go HTTP backend, modular vanilla JavaScript frontend, local JSON result storage, SQLite-backed user accounts, result insights, compatibility, friend requests, share cards, and an admin/export panel.
+A lightweight full-stack personality type test with a Go HTTP backend, modular vanilla JavaScript frontend, local JSON result storage, SQLite-backed user accounts, result insights, compatibility, friend requests, public profile comments, share cards, and an admin/export panel.
 
 **Quick links:** [Preview](#preview) | [Features](#features) | [Quick Start](#quick-start) | [Docker](#docker) | [Quality Checks](#quality-checks) | [API](#api-overview)
 
@@ -41,6 +41,7 @@ When those files exist, replace this note with a short screenshot gallery.
 - Email/password user registration and login with bcrypt password hashing and an HttpOnly session cookie.
 - Private My Account result history for logged-in users, including primary result selection and deleting own saved results.
 - Public username profiles with editable display name, short bio, avatar preset, optional primary MBTI result, optional completed-test count, optional public friends list, and public/private visibility.
+- Public profile comments: logged-in users can post on public profiles, and comment authors or profile owners can delete comments.
 - Simple friends system with incoming friend requests, accepting requests, removing friends, and compatibility scores based on both users' primary MBTI results.
 - Local JSON persistence with safer temp-file writes and rename.
 - SQLite user storage for accounts and logged-in saved test results.
@@ -128,6 +129,8 @@ When a logged-in user completes the quiz, the app keeps the existing anonymous J
 
 Users can also open a public profile at `/?profile=username`. Public profiles show only safe public data: username, display name, avatar preset, and the public fields the owner has enabled. A user can make the profile private, hide the primary MBTI result, hide the completed test count, and hide the public friends list. Email, password hashes, private answers, and full saved result history are not public.
 
+Public profiles also support simple comments. Logged-out visitors can read comments on public profiles, while logged-in users can post plain-text comments up to 500 characters. Comment authors can delete their own comments, and profile owners can moderate comments on their own profiles. Private profiles hide comments and reject new comments. There are no private messages, likes, replies, or notifications in this phase.
+
 Logged-in users can send friend requests from another user's public profile. Incoming requests appear in My Account, where the target user can accept them. Accepted friends are shown in both users' private friends lists. Public profiles can show a compact public friends preview only when the profile owner enables it. If both users have selected a primary MBTI result, the private friends list shows friendship, relationship, and work compatibility scores. If either user has no primary result, the UI shows compatibility as unavailable.
 
 The regular user auth endpoints are separate from the admin endpoints:
@@ -143,6 +146,9 @@ The regular user auth endpoints are separate from the admin endpoints:
 | `POST` | `/api/me/results/{id}/primary` | Mark one of the current user's saved results as primary. |
 | `DELETE` | `/api/me/results/{id}` | Delete one of the current user's saved results. |
 | `GET` | `/api/users/{username}` | Return a safe public profile by username, respecting privacy settings. |
+| `GET` | `/api/users/{username}/comments` | List latest public profile comments when the profile is public. |
+| `POST` | `/api/users/{username}/comments` | Add a plain-text comment to a public profile as the logged-in user. |
+| `DELETE` | `/api/profile-comments/{id}` | Delete a comment as its author or the profile owner. |
 | `POST` | `/api/friends/request` | Send a friend request to a username. |
 | `GET` | `/api/friends/requests` | List incoming pending friend requests. |
 | `POST` | `/api/friends/requests/{id}/accept` | Accept an incoming pending friend request. |
@@ -251,6 +257,9 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 | `POST` | `/api/me/results/{id}/primary` | Set the current user's primary saved result. |
 | `DELETE` | `/api/me/results/{id}` | Delete one saved result owned by the current user. |
 | `GET` | `/api/users/{username}` | Return safe public profile data by username, with private or hidden fields omitted. |
+| `GET` | `/api/users/{username}/comments` | Return latest comments for a public profile, with safe public author fields only. |
+| `POST` | `/api/users/{username}/comments` | Create a 1-500 character plain-text comment on a public profile as the logged-in user. |
+| `DELETE` | `/api/profile-comments/{id}` | Delete a profile comment as the comment author or profile owner. |
 | `POST` | `/api/friends/request` | Send a friend request to another user by username. |
 | `GET` | `/api/friends/requests` | Return incoming pending friend requests for the current user. |
 | `POST` | `/api/friends/requests/{id}/accept` | Accept an incoming friend request addressed to the current user. |
@@ -275,6 +284,8 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 - Public profile responses never include email, password hashes, private answers, or full saved result history.
 - Private public profiles omit bio, primary MBTI, completed count, public friends list, and detailed profile data.
 - Profile owners can independently hide primary MBTI, completed test count, and the public friends list while keeping the profile itself public.
+- Profile comment responses expose only username, display name, avatar preset, created date, and plain-text body. Private profiles hide comments and reject new comments.
+- Comment deletion is limited to the comment author and the owner of the profile that received the comment.
 - Friend endpoints require a regular user session, prevent self-requests and duplicate pairs, allow accepting only by the addressee, and allow removing only accepted friendships that include the current user.
 - Friend list and request responses expose only safe public account fields, primary MBTI type, and compatibility state.
 - Profile editing is limited to display name, bio, a fixed allowlist of CSS avatar presets, and basic public-profile privacy settings. There are no custom avatar uploads.
@@ -289,7 +300,7 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 - JSON file storage is simple and reviewable, but it is not ideal for multi-instance deployments.
 - Anonymous submissions still use the JSON store; logged-in saved history is stored separately in SQLite.
 - Sessions and login rate limits are in memory, so they reset when the process restarts.
-- There is no Google OAuth, email verification, password reset, custom avatar upload, comments, private messages, real-time notifications, blocking, or reporting yet.
+- There is no Google OAuth, email verification, password reset, custom avatar upload, private messages, comment likes/replies, real-time notifications, blocking, or reporting yet.
 - Friend requests are intentionally simple: no rejection UI, no notification feed, and no real-time updates.
 - SQLite account data needs persistent storage on Render if it must survive restarts or redeploys.
 - Real screenshots still need to be captured manually before the README has a full visual gallery.

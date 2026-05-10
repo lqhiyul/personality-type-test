@@ -113,6 +113,15 @@ func RunMigrations(ctx context.Context, db *sql.DB) error {
 			FOREIGN KEY(addressee_id) REFERENCES users(id) ON DELETE CASCADE,
 			CHECK (requester_id <> addressee_id)
 		)`,
+		`CREATE TABLE IF NOT EXISTS profile_comments (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			profile_user_id INTEGER NOT NULL,
+			author_user_id INTEGER NOT NULL,
+			body TEXT NOT NULL,
+			created_at TEXT NOT NULL,
+			FOREIGN KEY(profile_user_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY(author_user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
 		`CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)`,
 		`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
 		`CREATE INDEX IF NOT EXISTS idx_user_test_results_user_id ON user_test_results(user_id)`,
@@ -120,6 +129,8 @@ func RunMigrations(ctx context.Context, db *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS idx_friendships_requester_id ON friendships(requester_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_friendships_addressee_id ON friendships(addressee_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_friendships_status ON friendships(status)`,
+		`CREATE INDEX IF NOT EXISTS idx_profile_comments_profile_user_id_created_at ON profile_comments(profile_user_id, created_at, id)`,
+		`CREATE INDEX IF NOT EXISTS idx_profile_comments_author_user_id ON profile_comments(author_user_id)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_friendships_pair_unique ON friendships (
 			CASE WHEN requester_id < addressee_id THEN requester_id ELSE addressee_id END,
 			CASE WHEN requester_id < addressee_id THEN addressee_id ELSE requester_id END

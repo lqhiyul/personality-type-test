@@ -85,6 +85,7 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("/api/me/profile", a.handleMyProfile)
 	mux.HandleFunc("/api/me/results/", a.handleMyResultByID)
 	mux.HandleFunc("/api/me/results", a.handleMyResults)
+	mux.HandleFunc("/api/profile-comments/", a.handleProfileCommentByID)
 	mux.HandleFunc("/api/users/", a.handlePublicUserProfile)
 	mux.HandleFunc("/api/friends/requests/", a.handleFriendRequestByID)
 	mux.HandleFunc("/api/friends/requests", a.handleFriendRequests)

@@ -11,6 +11,7 @@ const API = {
   myResults: "/api/me/results",
   myProfile: "/api/me/profile",
   users: "/api/users",
+  profileComments: "/api/profile-comments",
   friends: "/api/friends",
   friendRequest: "/api/friends/request",
   friendRequests: "/api/friends/requests",
@@ -88,6 +89,18 @@ function deleteMyResult(id) {
 
 function fetchPublicProfile(username) {
   return fetch(`${API.users}/${encodeURIComponent(username)}`);
+}
+
+function fetchPublicProfileComments(username) {
+  return fetch(`${API.users}/${encodeURIComponent(username)}/comments`);
+}
+
+function postPublicProfileComment(username, body) {
+  return requestJSON(`${API.users}/${encodeURIComponent(username)}/comments`, { method: "POST", body: { body } });
+}
+
+function deletePublicProfileComment(id) {
+  return fetch(`${API.profileComments}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 function updateMyProfile(payload) {

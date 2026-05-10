@@ -332,6 +332,69 @@
     }
   };
 
+  const profileCommentsPatch = {
+    uk: {
+      publicProfile: {
+        commentsTitle: "Коментарі",
+        commentsEmpty: "Коментарів поки немає",
+        commentsLoading: "Завантаження коментарів...",
+        commentsLoadFailed: "Не вдалося завантажити коментарі",
+        commentsLogin: "Увійдіть, щоб коментувати",
+        commentsPrivate: "Коментарі приховані для приватних профілів",
+        commentAuthor: "Користувач",
+        commentWrite: "Написати коментар",
+        commentPost: "Опублікувати",
+        commentDelete: "Видалити",
+        commentLimit: "До 500 символів",
+        commentEmpty: "Коментар не може бути порожнім",
+        commentTooLong: "Коментар занадто довгий",
+        commentSaveFailed: "Не вдалося опублікувати коментар",
+        commentDeleteConfirm: "Видалити цей коментар?",
+        commentDeleteFailed: "Не вдалося видалити коментар"
+      }
+    },
+    ru: {
+      publicProfile: {
+        commentsTitle: "Комментарии",
+        commentsEmpty: "Комментариев пока нет",
+        commentsLoading: "Загрузка комментариев...",
+        commentsLoadFailed: "Не удалось загрузить комментарии",
+        commentsLogin: "Войдите, чтобы комментировать",
+        commentsPrivate: "Комментарии скрыты для приватных профилей",
+        commentAuthor: "Пользователь",
+        commentWrite: "Написать комментарий",
+        commentPost: "Опубликовать",
+        commentDelete: "Удалить",
+        commentLimit: "До 500 символов",
+        commentEmpty: "Комментарий не может быть пустым",
+        commentTooLong: "Комментарий слишком длинный",
+        commentSaveFailed: "Не удалось опубликовать комментарий",
+        commentDeleteConfirm: "Удалить этот комментарий?",
+        commentDeleteFailed: "Не удалось удалить комментарий"
+      }
+    },
+    en: {
+      publicProfile: {
+        commentsTitle: "Comments",
+        commentsEmpty: "No comments yet",
+        commentsLoading: "Loading comments...",
+        commentsLoadFailed: "Could not load comments",
+        commentsLogin: "Log in to comment",
+        commentsPrivate: "Comments are hidden for private profiles",
+        commentAuthor: "User",
+        commentWrite: "Write a comment",
+        commentPost: "Post comment",
+        commentDelete: "Delete",
+        commentLimit: "500 characters max",
+        commentEmpty: "Comment cannot be empty",
+        commentTooLong: "Comment is too long",
+        commentSaveFailed: "Could not post comment",
+        commentDeleteConfirm: "Delete this comment?",
+        commentDeleteFailed: "Could not delete comment"
+      }
+    }
+  };
+
   const explanations = ["energy", "group entry", "idea processing", "social start", "team rhythm", "idea sharing", "stimulation", "evidence", "attention", "learning", "future project", "idea quality", "problem frame", "solution value", "decision filter", "hard truth", "conflict", "mistakes", "feedback", "team trust", "efficiency and comfort", "task load", "deadlines", "starting work", "rest", "change", "work rhythm", "everyday rhythm"];
 
   function toQuestion(row, index) {
@@ -381,6 +444,7 @@
     };
     deepMerge(content.ui, uiPatch[lang]);
     deepMerge(content.ui, uiPolishPatch[lang]);
+    deepMerge(content.ui, profileCommentsPatch[lang]);
     content.title = uiPatch[lang].title;
     content.description = uiPatch[lang].description;
     content.questions = questionRows[lang].map(toQuestion);
