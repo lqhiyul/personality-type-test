@@ -35,13 +35,19 @@ type profileUpdateRequest struct {
 }
 
 type publicProfileResponse struct {
-	Username            string `json:"username"`
-	DisplayName         string `json:"displayName"`
-	Bio                 string `json:"bio"`
-	AvatarKey           string `json:"avatarKey"`
-	PrimaryType         string `json:"primaryType"`
-	PrimaryResultDate   string `json:"primaryResultDate,omitempty"`
-	CompletedTestsCount int    `json:"completedTestsCount"`
+	Username            string                           `json:"username"`
+	DisplayName         string                           `json:"displayName"`
+	Bio                 string                           `json:"bio"`
+	AvatarKey           string                           `json:"avatarKey"`
+	PrimaryType         string                           `json:"primaryType"`
+	PrimaryResultDate   string                           `json:"primaryResultDate,omitempty"`
+	CompletedTestsCount int                              `json:"completedTestsCount"`
+	ViewerFriendship    *publicProfileFriendshipResponse `json:"viewerFriendship,omitempty"`
+}
+
+type publicProfileFriendshipResponse struct {
+	Status       string `json:"status"`
+	FriendshipID int64  `json:"friendshipId,omitempty"`
 }
 
 func (a *App) handlePublicUserProfile(w http.ResponseWriter, r *http.Request) {
@@ -123,6 +129,12 @@ func (a *App) newPublicProfileResponse(r *http.Request, user User) (publicProfil
 		CompletedTestsCount: count,
 	}
 
+	viewerFriendship, err := a.newPublicProfileFriendshipResponse(r, user)
+	if err != nil {
+		return publicProfileResponse{}, err
+	}
+	response.ViewerFriendship = viewerFriendship
+
 	primary, err := a.userStore.GetPrimaryUserTestResult(r.Context(), user.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -132,6 +144,36 @@ func (a *App) newPublicProfileResponse(r *http.Request, user User) (publicProfil
 	}
 	response.PrimaryType = primary.MBTIType
 	response.PrimaryResultDate = primary.CreatedAt.Format(time.RFC3339Nano)
+	return response, nil
+}
+
+func (a *App) newPublicProfileFriendshipResponse(r *http.Request, user User) (*publicProfileFriendshipResponse, error) {
+	viewerID, ok := a.currentUserID(r)
+	if !ok || viewerID == user.ID {
+		return nil, nil
+	}
+
+	friendship, err := a.userStore.GetFriendshipBetween(r.Context(), viewerID, user.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &publicProfileFriendshipResponse{Status: "none"}, nil
+		}
+		return nil, err
+	}
+
+	response := &publicProfileFriendshipResponse{FriendshipID: friendship.ID}
+	switch friendship.Status {
+	case FriendshipStatusAccepted:
+		response.Status = "friends"
+	case FriendshipStatusPending:
+		if friendship.RequesterID == viewerID {
+			response.Status = "request_sent"
+		} else {
+			response.Status = "request_received"
+		}
+	default:
+		response.Status = "none"
+	}
 	return response, nil
 }
 
