@@ -79,6 +79,19 @@
             <button type="button" class="account-link-btn" id="viewPublicProfileBtn">View public profile</button>
             <button type="button" class="account-link-btn" id="copyPublicProfileBtn">Copy profile link</button>
           </div>
+          <section class="profile-messages" aria-labelledby="profileMessagesTitle">
+            <div class="profile-messages__head">
+              <div>
+                <div class="profile-results__eyebrow" id="profileMessagesEyebrow">Inbox</div>
+                <h3 id="profileMessagesTitle">Messages</h3>
+              </div>
+              <button type="button" class="profile-results__refresh" id="profileMessagesRefreshBtn">Refresh</button>
+            </div>
+            <div class="profile-messages__grid">
+              <div class="profile-messages__conversations" id="messageConversationsList"></div>
+              <div class="profile-messages__thread" id="messageThread"></div>
+            </div>
+          </section>
           <section class="profile-privacy" aria-labelledby="profilePrivacyTitle">
             <div class="profile-privacy__head">
               <div>
@@ -328,6 +341,7 @@
   <script src="js/auth.js"></script>
   <script src="js/profile.js"></script>
   <script src="js/friends.js"></script>
+  <script src="js/messages.js"></script>
   <script src="js/share.js"></script>
   <script src="js/events.js"></script>
   <script src="js/app.js"></script>

@@ -15,6 +15,9 @@ const API = {
   friends: "/api/friends",
   friendRequest: "/api/friends/request",
   friendRequests: "/api/friends/requests",
+  messagesStart: "/api/messages/start",
+  messageConversations: "/api/messages/conversations",
+  messages: "/api/messages",
 };
 
 async function requestJSON(url, options = {}) {
@@ -125,4 +128,24 @@ function acceptFriendRequest(id) {
 
 function deleteFriendship(id) {
   return fetch(`${API.friends}/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+function startMessageConversation(username) {
+  return requestJSON(API.messagesStart, { method: "POST", body: { username } });
+}
+
+function fetchMessageConversations() {
+  return fetch(API.messageConversations);
+}
+
+function fetchMessageConversation(id) {
+  return fetch(`${API.messageConversations}/${encodeURIComponent(id)}`);
+}
+
+function sendConversationMessage(id, body) {
+  return requestJSON(`${API.messageConversations}/${encodeURIComponent(id)}`, { method: "POST", body: { body } });
+}
+
+function deleteConversationMessage(id) {
+  return fetch(`${API.messages}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }

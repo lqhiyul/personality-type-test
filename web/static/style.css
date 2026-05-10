@@ -1994,6 +1994,238 @@ a:focus-visible{
   gap:12px;
 }
 
+.profile-messages{
+  display:grid;
+  gap:12px;
+  min-width:0;
+}
+
+.profile-messages__head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:16px;
+  background:rgba(255,255,255,.03);
+}
+
+.profile-messages__head h3{
+  margin:0;
+  color:rgba(245,247,255,.9);
+  font-size:15px;
+  line-height:1.3;
+}
+
+.profile-messages__grid{
+  display:grid;
+  gap:10px;
+  min-width:0;
+}
+
+.profile-messages__conversations{
+  display:grid;
+  gap:8px;
+  min-width:0;
+}
+
+.profile-message-conversation{
+  appearance:none;
+  display:grid;
+  gap:4px;
+  min-width:0;
+  width:100%;
+  padding:11px 12px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;
+  background:linear-gradient(180deg, rgba(24,27,39,.62), rgba(9,11,18,.84));
+  color:rgba(238,242,255,.8);
+  text-align:left;
+  cursor:pointer;
+}
+
+.profile-message-conversation.active,
+.profile-message-conversation:hover,
+.profile-message-conversation:focus-visible{
+  border-color:rgba(244,238,223,.28);
+  background:rgba(244,238,223,.08);
+  outline:none;
+}
+
+.profile-message-conversation__title,
+.profile-message-conversation__preview,
+.profile-message-conversation__time{
+  display:block;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.profile-message-conversation__title{
+  color:rgba(245,247,255,.94);
+  font-size:13px;
+  font-weight:850;
+}
+
+.profile-message-conversation__preview{
+  color:rgba(232,236,255,.62);
+  font-size:12px;
+}
+
+.profile-message-conversation__time{
+  color:rgba(232,236,255,.44);
+  font-size:11px;
+  font-weight:800;
+}
+
+.profile-messages__thread{
+  display:grid;
+  gap:10px;
+  min-width:0;
+}
+
+.profile-message-thread__head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px;
+  min-width:0;
+  padding:10px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;
+  background:rgba(255,255,255,.03);
+}
+
+.profile-message-thread__head strong{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#fff8e8;
+  font-size:13px;
+}
+
+.profile-message-list{
+  display:grid;
+  gap:8px;
+  max-height:300px;
+  overflow:auto;
+  min-width:0;
+  padding-right:2px;
+}
+
+.profile-message{
+  display:grid;
+  gap:7px;
+  min-width:0;
+  padding:10px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;
+  background:rgba(255,255,255,.035);
+}
+
+.profile-message--own{
+  border-color:rgba(158,230,184,.18);
+  background:rgba(158,230,184,.06);
+}
+
+.profile-message__meta{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-width:0;
+}
+
+.profile-message__meta strong,
+.profile-message__meta span{
+  display:block;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.profile-message__meta strong{
+  color:rgba(245,247,255,.94);
+  font-size:12px;
+}
+
+.profile-message__meta span{
+  color:rgba(232,236,255,.5);
+  font-size:11px;
+}
+
+.profile-message p{
+  margin:0;
+  color:rgba(232,236,255,.78);
+  font-size:13px;
+  line-height:1.55;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+
+.profile-message__delete{
+  appearance:none;
+  justify-self:start;
+  min-height:30px;
+  padding:6px 9px;
+  border:1px solid rgba(255,127,140,.2);
+  border-radius:10px;
+  background:rgba(255,127,140,.08);
+  color:#ffd6dc;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.profile-message-form{
+  display:grid;
+  gap:9px;
+  min-width:0;
+}
+
+.profile-message-form label{
+  color:rgba(232,236,255,.66);
+  font-size:11px;
+  font-weight:850;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+.profile-message-form textarea{
+  min-height:82px;
+  border-radius:14px;
+  font-size:13px;
+}
+
+.profile-message-form__actions{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.profile-message-form__actions span{
+  color:rgba(232,236,255,.5);
+  font-size:11px;
+}
+
+.profile-messages__empty{
+  padding:12px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;
+  background:rgba(255,255,255,.025);
+  color:rgba(232,236,255,.62);
+  font-size:13px;
+  line-height:1.5;
+}
+
 .profile-friends__head{
   display:flex;
   align-items:center;
@@ -2335,6 +2567,25 @@ a:focus-visible{
   align-items:center;
   gap:10px;
   margin-top:12px;
+}
+
+.public-profile-message-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:12px;
+}
+
+.public-profile-message-state{
+  margin-top:12px;
+  padding:10px 12px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  background:rgba(255,255,255,.035);
+  color:rgba(232,236,255,.66);
+  font-size:12px;
+  font-weight:800;
+  line-height:1.4;
 }
 
 .public-profile-friend-state{
@@ -2704,6 +2955,7 @@ a:focus-visible{
 
   .profile-results__head,
   .profile-friends__head,
+  .profile-messages__head,
   .profile-privacy__head{
     display:grid;
     align-items:flex-start;
@@ -2728,19 +2980,28 @@ a:focus-visible{
   .profile-result__main span,
   .profile-friend-card__identity strong,
   .profile-friend-card__identity span,
+  .profile-message-conversation__title,
+  .profile-message-conversation__preview,
+  .profile-message-conversation__time,
+  .profile-message-thread__head strong,
+  .profile-message__meta strong,
+  .profile-message__meta span,
   .profile-friend-card__meta{
     white-space:normal;
     overflow-wrap:anywhere;
   }
 
   .profile-result__actions,
-  .profile-friend-card__actions{
+  .profile-friend-card__actions,
+  .profile-message-form__actions{
     display:grid;
     grid-template-columns:1fr;
   }
 
   .profile-result__btn,
-  .profile-result__badge{
+  .profile-result__badge,
+  .profile-message__delete,
+  .profile-message-form__actions .btn{
     width:100%;
     justify-content:center;
     text-align:center;

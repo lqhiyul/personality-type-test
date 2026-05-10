@@ -122,6 +122,28 @@ func RunMigrations(ctx context.Context, db *sql.DB) error {
 			FOREIGN KEY(profile_user_id) REFERENCES users(id) ON DELETE CASCADE,
 			FOREIGN KEY(author_user_id) REFERENCES users(id) ON DELETE CASCADE
 		)`,
+		`CREATE TABLE IF NOT EXISTS conversations (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL
+		)`,
+		`CREATE TABLE IF NOT EXISTS conversation_participants (
+			conversation_id INTEGER NOT NULL,
+			user_id INTEGER NOT NULL,
+			PRIMARY KEY(conversation_id, user_id),
+			FOREIGN KEY(conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE IF NOT EXISTS messages (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			conversation_id INTEGER NOT NULL,
+			sender_id INTEGER NOT NULL,
+			body TEXT NOT NULL,
+			created_at TEXT NOT NULL,
+			deleted_at TEXT,
+			FOREIGN KEY(conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+			FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
 		`CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)`,
 		`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
 		`CREATE INDEX IF NOT EXISTS idx_user_test_results_user_id ON user_test_results(user_id)`,
@@ -131,6 +153,9 @@ func RunMigrations(ctx context.Context, db *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS idx_friendships_status ON friendships(status)`,
 		`CREATE INDEX IF NOT EXISTS idx_profile_comments_profile_user_id_created_at ON profile_comments(profile_user_id, created_at, id)`,
 		`CREATE INDEX IF NOT EXISTS idx_profile_comments_author_user_id ON profile_comments(author_user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_conversation_participants_user_id ON conversation_participants(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_messages_conversation_id_created_at ON messages(conversation_id, created_at, id)`,
+		`CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_friendships_pair_unique ON friendships (
 			CASE WHEN requester_id < addressee_id THEN requester_id ELSE addressee_id END,
 			CASE WHEN requester_id < addressee_id THEN addressee_id ELSE requester_id END

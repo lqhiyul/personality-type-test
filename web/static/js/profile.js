@@ -139,6 +139,7 @@ function renderPublicProfile() {
         <button type="button" class="result-type-btn result-type-btn--muted" data-profile-copy="${esc(profile.username)}">${esc(publicProfileLabel("copyLink", "Copy profile link"))}</button>
         <button type="button" class="result-type-btn" data-profile-home>${esc(publicProfileLabel("backHome", "Back to quiz"))}</button>
       </div>
+      ${typeof renderPublicProfileMessageAction === "function" ? renderPublicProfileMessageAction(profile, ownProfile) : ""}
       ${renderPublicProfileCommentsHidden()}
     </article>`;
     return;
@@ -170,6 +171,7 @@ function renderPublicProfile() {
         ${ownProfile ? `<button type="button" class="result-type-btn" data-profile-edit>${esc(state.profileEditOpen ? publicProfileLabel("closeEdit", "Close edit") : publicProfileLabel("edit", "Edit profile"))}</button>` : ""}
         <button type="button" class="result-type-btn result-type-btn--muted" data-profile-copy="${esc(profile.username)}">${esc(publicProfileLabel("copyLink", "Copy profile link"))}</button>
       </div>
+      ${typeof renderPublicProfileMessageAction === "function" ? renderPublicProfileMessageAction(profile, ownProfile) : ""}
       ${typeof renderPublicProfileFriendActions === "function" ? renderPublicProfileFriendActions(profile, ownProfile) : ""}
     </article>
     ${renderPublicProfileTypeCard(profile, type, typeSummary)}
