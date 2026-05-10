@@ -28,20 +28,30 @@ type userLoginRequest struct {
 }
 
 type authUserResponse struct {
-	ID          int64  `json:"id"`
-	Username    string `json:"username"`
-	Email       string `json:"email"`
-	DisplayName string `json:"displayName"`
+	ID                 int64  `json:"id"`
+	Username           string `json:"username"`
+	Email              string `json:"email"`
+	DisplayName        string `json:"displayName"`
+	Bio                string `json:"bio"`
+	AvatarKey          string `json:"avatarKey"`
+	ProfileVisibility  string `json:"profileVisibility"`
+	ShowPrimaryResult  bool   `json:"showPrimaryResult"`
+	ShowCompletedCount bool   `json:"showCompletedCount"`
+	ShowFriends        bool   `json:"showFriends"`
 }
 
 type currentUserResponse struct {
-	ID          int64  `json:"id"`
-	Username    string `json:"username"`
-	Email       string `json:"email"`
-	DisplayName string `json:"displayName"`
-	Bio         string `json:"bio"`
-	AvatarKey   string `json:"avatarKey"`
-	CreatedAt   string `json:"createdAt"`
+	ID                 int64  `json:"id"`
+	Username           string `json:"username"`
+	Email              string `json:"email"`
+	DisplayName        string `json:"displayName"`
+	Bio                string `json:"bio"`
+	AvatarKey          string `json:"avatarKey"`
+	ProfileVisibility  string `json:"profileVisibility"`
+	ShowPrimaryResult  bool   `json:"showPrimaryResult"`
+	ShowCompletedCount bool   `json:"showCompletedCount"`
+	ShowFriends        bool   `json:"showFriends"`
+	CreatedAt          string `json:"createdAt"`
 }
 
 func (a *App) handleAuthRegister(w http.ResponseWriter, r *http.Request) {
@@ -267,10 +277,16 @@ func newAuthUserResponse(user User) authUserResponse {
 		displayName = user.Username
 	}
 	return authUserResponse{
-		ID:          user.ID,
-		Username:    user.Username,
-		Email:       user.Email,
-		DisplayName: displayName,
+		ID:                 user.ID,
+		Username:           user.Username,
+		Email:              user.Email,
+		DisplayName:        displayName,
+		Bio:                user.Bio,
+		AvatarKey:          user.AvatarKey,
+		ProfileVisibility:  normalizedProfileVisibilityOrDefault(user.ProfileVisibility),
+		ShowPrimaryResult:  user.ShowPrimaryResult,
+		ShowCompletedCount: user.ShowCompletedCount,
+		ShowFriends:        user.ShowFriends,
 	}
 }
 
@@ -280,12 +296,16 @@ func newCurrentUserResponse(user User) currentUserResponse {
 		displayName = user.Username
 	}
 	return currentUserResponse{
-		ID:          user.ID,
-		Username:    user.Username,
-		Email:       user.Email,
-		DisplayName: displayName,
-		Bio:         user.Bio,
-		AvatarKey:   user.AvatarKey,
-		CreatedAt:   user.CreatedAt.Format(time.RFC3339Nano),
+		ID:                 user.ID,
+		Username:           user.Username,
+		Email:              user.Email,
+		DisplayName:        displayName,
+		Bio:                user.Bio,
+		AvatarKey:          user.AvatarKey,
+		ProfileVisibility:  normalizedProfileVisibilityOrDefault(user.ProfileVisibility),
+		ShowPrimaryResult:  user.ShowPrimaryResult,
+		ShowCompletedCount: user.ShowCompletedCount,
+		ShowFriends:        user.ShowFriends,
+		CreatedAt:          user.CreatedAt.Format(time.RFC3339Nano),
 	}
 }

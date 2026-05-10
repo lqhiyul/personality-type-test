@@ -4,18 +4,28 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
+const (
+	profileVisibilityPublic  = "public"
+	profileVisibilityPrivate = "private"
+)
+
 type User struct {
-	ID          int64
-	Username    string
-	Email       string
-	DisplayName string
-	Bio         string
-	AvatarKey   string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID                 int64
+	Username           string
+	Email              string
+	DisplayName        string
+	Bio                string
+	AvatarKey          string
+	ProfileVisibility  string
+	ShowPrimaryResult  bool
+	ShowCompletedCount bool
+	ShowFriends        bool
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 type userAuthRecord struct {
@@ -33,9 +43,13 @@ type CreateUserParams struct {
 }
 
 type UpdateUserProfileParams struct {
-	DisplayName string
-	Bio         string
-	AvatarKey   string
+	DisplayName        string
+	Bio                string
+	AvatarKey          string
+	ProfileVisibility  string
+	ShowPrimaryResult  *bool
+	ShowCompletedCount *bool
+	ShowFriends        *bool
 }
 
 type UserTestResult struct {
@@ -100,12 +114,45 @@ func (s *UserStore) GetUserByEmail(ctx context.Context, email string) (User, err
 }
 
 func (s *UserStore) UpdateUserProfile(ctx context.Context, id int64, params UpdateUserProfileParams) (User, error) {
+	current, err := s.GetUserByID(ctx, id)
+	if err != nil {
+		return User{}, err
+	}
+
+	profileVisibility := strings.TrimSpace(params.ProfileVisibility)
+	if profileVisibility == "" {
+		profileVisibility = current.ProfileVisibility
+	}
+	if profileVisibility == "" {
+		profileVisibility = profileVisibilityPublic
+	}
+	showPrimaryResult := current.ShowPrimaryResult
+	if params.ShowPrimaryResult != nil {
+		showPrimaryResult = *params.ShowPrimaryResult
+	}
+	showCompletedCount := current.ShowCompletedCount
+	if params.ShowCompletedCount != nil {
+		showCompletedCount = *params.ShowCompletedCount
+	}
+	showFriends := current.ShowFriends
+	if params.ShowFriends != nil {
+		showFriends = *params.ShowFriends
+	}
+
 	updatedAt := formatDBTime(s.now())
 	res, err := s.db.ExecContext(ctx, `
 		UPDATE users
-		SET display_name = ?, bio = ?, avatar_key = ?, updated_at = ?
+		SET
+			display_name = ?,
+			bio = ?,
+			avatar_key = ?,
+			profile_visibility = ?,
+			show_primary_result = ?,
+			show_completed_count = ?,
+			show_friends = ?,
+			updated_at = ?
 		WHERE id = ?
-	`, params.DisplayName, params.Bio, params.AvatarKey, updatedAt, id)
+	`, params.DisplayName, params.Bio, params.AvatarKey, profileVisibility, boolToInt(showPrimaryResult), boolToInt(showCompletedCount), boolToInt(showFriends), updatedAt, id)
 	if err != nil {
 		return User{}, fmt.Errorf("update user profile: %w", err)
 	}
@@ -292,6 +339,10 @@ func (s *UserStore) queryUser(ctx context.Context, where string, args ...any) (U
 			COALESCE(display_name, ''),
 			COALESCE(bio, ''),
 			COALESCE(avatar_key, ''),
+			COALESCE(profile_visibility, 'public'),
+			COALESCE(show_primary_result, 1),
+			COALESCE(show_completed_count, 1),
+			COALESCE(show_friends, 1),
 			created_at,
 			updated_at
 		FROM users
@@ -315,6 +366,10 @@ func (s *UserStore) queryUserAuth(ctx context.Context, where string, args ...any
 			COALESCE(display_name, ''),
 			COALESCE(bio, ''),
 			COALESCE(avatar_key, ''),
+			COALESCE(profile_visibility, 'public'),
+			COALESCE(show_primary_result, 1),
+			COALESCE(show_completed_count, 1),
+			COALESCE(show_friends, 1),
 			created_at,
 			updated_at
 		FROM users
@@ -366,6 +421,9 @@ func scanUser(row rowScanner) (User, error) {
 	var user User
 	var createdAt string
 	var updatedAt string
+	var showPrimaryResult int
+	var showCompletedCount int
+	var showFriends int
 	if err := row.Scan(
 		&user.ID,
 		&user.Username,
@@ -373,6 +431,10 @@ func scanUser(row rowScanner) (User, error) {
 		&user.DisplayName,
 		&user.Bio,
 		&user.AvatarKey,
+		&user.ProfileVisibility,
+		&showPrimaryResult,
+		&showCompletedCount,
+		&showFriends,
 		&createdAt,
 		&updatedAt,
 	); err != nil {
@@ -388,6 +450,10 @@ func scanUser(row rowScanner) (User, error) {
 	if err != nil {
 		return User{}, err
 	}
+	user.ProfileVisibility = normalizedProfileVisibilityOrDefault(user.ProfileVisibility)
+	user.ShowPrimaryResult = showPrimaryResult != 0
+	user.ShowCompletedCount = showCompletedCount != 0
+	user.ShowFriends = showFriends != 0
 	return user, nil
 }
 
@@ -395,6 +461,9 @@ func scanUserAuth(row rowScanner) (userAuthRecord, error) {
 	var record userAuthRecord
 	var createdAt string
 	var updatedAt string
+	var showPrimaryResult int
+	var showCompletedCount int
+	var showFriends int
 	if err := row.Scan(
 		&record.ID,
 		&record.Username,
@@ -403,6 +472,10 @@ func scanUserAuth(row rowScanner) (userAuthRecord, error) {
 		&record.DisplayName,
 		&record.Bio,
 		&record.AvatarKey,
+		&record.ProfileVisibility,
+		&showPrimaryResult,
+		&showCompletedCount,
+		&showFriends,
 		&createdAt,
 		&updatedAt,
 	); err != nil {
@@ -418,6 +491,10 @@ func scanUserAuth(row rowScanner) (userAuthRecord, error) {
 	if err != nil {
 		return userAuthRecord{}, err
 	}
+	record.ProfileVisibility = normalizedProfileVisibilityOrDefault(record.ProfileVisibility)
+	record.ShowPrimaryResult = showPrimaryResult != 0
+	record.ShowCompletedCount = showCompletedCount != 0
+	record.ShowFriends = showFriends != 0
 	return record, nil
 }
 
@@ -464,4 +541,13 @@ func boolToInt(value bool) int {
 		return 1
 	}
 	return 0
+}
+
+func normalizedProfileVisibilityOrDefault(value string) string {
+	switch strings.TrimSpace(value) {
+	case profileVisibilityPrivate:
+		return profileVisibilityPrivate
+	default:
+		return profileVisibilityPublic
+	}
 }

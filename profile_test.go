@@ -44,8 +44,8 @@ func TestPublicProfileWithoutPrimaryReturnsSafeData(t *testing.T) {
 	if profile.PrimaryType != "" || profile.PrimaryResultDate != "" {
 		t.Fatalf("expected no primary result, got %+v", profile)
 	}
-	if profile.CompletedTestsCount != 0 {
-		t.Fatalf("expected completed count 0, got %d", profile.CompletedTestsCount)
+	if profile.CompletedTestsCount == nil || *profile.CompletedTestsCount != 0 {
+		t.Fatalf("expected completed count 0, got %+v", profile.CompletedTestsCount)
 	}
 }
 
@@ -70,11 +70,136 @@ func TestPublicProfileWithPrimaryResultAndCount(t *testing.T) {
 	if profile.PrimaryType != "ENFP" || profile.PrimaryResultDate == "" {
 		t.Fatalf("expected ENFP primary result, got %+v", profile)
 	}
-	if profile.CompletedTestsCount != 2 {
-		t.Fatalf("expected completed count 2, got %d", profile.CompletedTestsCount)
+	if profile.CompletedTestsCount == nil || *profile.CompletedTestsCount != 2 {
+		t.Fatalf("expected completed count 2, got %+v", profile.CompletedTestsCount)
 	}
 	if profile.PrimaryType == first.MBTIType {
 		t.Fatalf("expected second result to be primary, got first result: %+v", profile)
+	}
+}
+
+func TestPublicProfileRespectsPrivacySettings(t *testing.T) {
+	app := newTestApp(t)
+	user, cookie := registerUserAndCookie(t, app, "private_public", "private-public@example.com")
+	result := createUserResultForTest(t, app, user.ID, "INTJ", 60)
+	if _, err := app.userStore.SetPrimaryUserTestResult(context.Background(), user.ID, result.ID); err != nil {
+		t.Fatalf("SetPrimaryUserTestResult() error = %v", err)
+	}
+
+	rec := performJSON(app, http.MethodPatch, "/api/me/profile", map[string]any{
+		"displayName":        "Private Public",
+		"bio":                "Private bio should stay hidden.",
+		"avatarKey":          "gradient-gold",
+		"profileVisibility":  "private",
+		"showPrimaryResult":  true,
+		"showCompletedCount": true,
+		"showFriends":        true,
+	}, cookie)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected privacy update 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	public := performJSON(app, http.MethodGet, "/api/users/private_public", nil)
+	if public.Code != http.StatusOK {
+		t.Fatalf("expected private profile response 200, got %d: %s", public.Code, public.Body.String())
+	}
+	body := public.Body.String()
+	for _, hidden := range []string{"Private bio should stay hidden.", "INTJ", "completedTestsCount", "primaryType", "friends", "private-public@example.com", "answers_json"} {
+		if strings.Contains(body, hidden) {
+			t.Fatalf("private profile leaked %q in %s", hidden, body)
+		}
+	}
+	var profile publicProfileResponse
+	if err := json.Unmarshal([]byte(body), &profile); err != nil {
+		t.Fatalf("decode private profile: %v", err)
+	}
+	if !profile.IsPrivate || profile.ProfileVisibility != profileVisibilityPrivate {
+		t.Fatalf("expected private profile marker, got %+v", profile)
+	}
+	if profile.DisplayName != "Private Public" || profile.AvatarKey != "gradient-gold" {
+		t.Fatalf("expected safe public identity on private profile, got %+v", profile)
+	}
+}
+
+func TestPublicProfileCanHidePrimaryResultAndCompletedCount(t *testing.T) {
+	app := newTestApp(t)
+	user, cookie := registerUserAndCookie(t, app, "hidden_bits", "hidden-bits@example.com")
+	result := createUserResultForTest(t, app, user.ID, "ENFP", 60)
+	if _, err := app.userStore.SetPrimaryUserTestResult(context.Background(), user.ID, result.ID); err != nil {
+		t.Fatalf("SetPrimaryUserTestResult() error = %v", err)
+	}
+
+	rec := performJSON(app, http.MethodPatch, "/api/me/profile", map[string]any{
+		"profileVisibility":  "public",
+		"showPrimaryResult":  false,
+		"showCompletedCount": false,
+		"showFriends":        true,
+	}, cookie)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected privacy update 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	public := performJSON(app, http.MethodGet, "/api/users/hidden_bits", nil)
+	if public.Code != http.StatusOK {
+		t.Fatalf("expected public profile 200, got %d: %s", public.Code, public.Body.String())
+	}
+	body := public.Body.String()
+	for _, hidden := range []string{"ENFP", "primaryType", "primaryResultDate", "completedTestsCount", "hidden-bits@example.com", "answers_json"} {
+		if strings.Contains(body, hidden) {
+			t.Fatalf("public privacy setting leaked %q in %s", hidden, body)
+		}
+	}
+	var profile publicProfileResponse
+	if err := json.Unmarshal([]byte(body), &profile); err != nil {
+		t.Fatalf("decode public profile: %v", err)
+	}
+	if profile.ShowPrimaryResult || profile.ShowCompletedCount {
+		t.Fatalf("expected hidden primary and completed flags, got %+v", profile)
+	}
+}
+
+func TestPublicProfileFriendsRespectShowFriends(t *testing.T) {
+	app := newTestApp(t)
+	owner, ownerCookie := registerUserAndCookie(t, app, "friend_owner", "friend-owner@example.com")
+	_, friendCookie := registerUserAndCookie(t, app, "friend_public", "friend-public@example.com")
+
+	request := performJSON(app, http.MethodPost, "/api/friends/request", map[string]string{"username": owner.Username}, friendCookie)
+	if request.Code != http.StatusCreated {
+		t.Fatalf("expected friend request 201, got %d: %s", request.Code, request.Body.String())
+	}
+	var friendship friendshipResponse
+	if err := json.NewDecoder(request.Body).Decode(&friendship); err != nil {
+		t.Fatalf("decode friendship: %v", err)
+	}
+	accept := performJSON(app, http.MethodPost, "/api/friends/requests/"+strconvID(friendship.ID)+"/accept", nil, ownerCookie)
+	if accept.Code != http.StatusOK {
+		t.Fatalf("expected accept 200, got %d: %s", accept.Code, accept.Body.String())
+	}
+
+	public := performJSON(app, http.MethodGet, "/api/users/friend_owner", nil)
+	if public.Code != http.StatusOK {
+		t.Fatalf("expected public profile 200, got %d: %s", public.Code, public.Body.String())
+	}
+	if !strings.Contains(public.Body.String(), "friend_public") {
+		t.Fatalf("expected public friends list to include accepted public friend, got %s", public.Body.String())
+	}
+
+	rec := performJSON(app, http.MethodPatch, "/api/me/profile", map[string]any{
+		"profileVisibility":  "public",
+		"showPrimaryResult":  true,
+		"showCompletedCount": true,
+		"showFriends":        false,
+	}, ownerCookie)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected showFriends update 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	hidden := performJSON(app, http.MethodGet, "/api/users/friend_owner", nil)
+	if hidden.Code != http.StatusOK {
+		t.Fatalf("expected public profile 200, got %d: %s", hidden.Code, hidden.Body.String())
+	}
+	if strings.Contains(hidden.Body.String(), "friend_public") || strings.Contains(hidden.Body.String(), `"friends"`) {
+		t.Fatalf("expected hidden public friends list, got %s", hidden.Body.String())
 	}
 }
 
@@ -118,6 +243,10 @@ func TestProfileUpdateRequiresLoginAndValidatesInput(t *testing.T) {
 		{
 			name: "invalid avatar",
 			body: map[string]string{"displayName": "Editable", "bio": "", "avatarKey": "custom-upload"},
+		},
+		{
+			name: "invalid profile visibility",
+			body: map[string]any{"profileVisibility": "friends-only"},
 		},
 		{
 			name: "unknown identity fields",
@@ -172,6 +301,40 @@ func TestLoggedInUserCanUpdateOwnPublicProfile(t *testing.T) {
 	}
 	if profile.DisplayName != "Own Profile" || profile.Bio != "This is safe public text." || profile.AvatarKey != "symbol-creator" {
 		t.Fatalf("unexpected public profile after update: %+v", profile)
+	}
+}
+
+func TestLoggedInUserCanUpdateProfilePrivacySettings(t *testing.T) {
+	app := newTestApp(t)
+	user, cookie := registerUserAndCookie(t, app, "privacy_owner", "privacy-owner@example.com")
+
+	rec := performJSON(app, http.MethodPatch, "/api/me/profile", map[string]any{
+		"profileVisibility":  "private",
+		"showPrimaryResult":  false,
+		"showCompletedCount": false,
+		"showFriends":        false,
+	}, cookie)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected profile privacy update 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var current currentUserResponse
+	if err := json.NewDecoder(rec.Body).Decode(&current); err != nil {
+		t.Fatalf("decode current user: %v", err)
+	}
+	if current.Username != user.Username || current.Email != user.Email {
+		t.Fatalf("privacy update changed identity fields: %+v", current)
+	}
+	if current.ProfileVisibility != profileVisibilityPrivate || current.ShowPrimaryResult || current.ShowCompletedCount || current.ShowFriends {
+		t.Fatalf("unexpected privacy settings in current user: %+v", current)
+	}
+
+	after, err := app.userStore.GetUserByID(context.Background(), user.ID)
+	if err != nil {
+		t.Fatalf("GetUserByID() error = %v", err)
+	}
+	if after.Username != user.Username || after.Email != user.Email {
+		t.Fatalf("privacy update changed stored identity fields: %+v", after)
 	}
 }
 

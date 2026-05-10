@@ -104,7 +104,7 @@ function renderPublicProfile() {
   if (state.publicProfileError) {
     section.innerHTML = `<article class="public-profile-card public-profile-card--state">
       <h2>${esc(state.publicProfileError)}</h2>
-      <p>${esc(publicProfileLabel("notFoundCopy", "The profile may be private, renamed, or unavailable."))}</p>
+      <p>${esc(publicProfileLabel("notFoundCopy", "The profile may have been renamed or is unavailable."))}</p>
       <button type="button" class="result-type-btn" data-profile-home>${esc(publicProfileLabel("backHome", "Back to quiz"))}</button>
     </article>`;
     return;
@@ -118,10 +118,31 @@ function renderPublicProfile() {
 
   const ownProfile = Boolean(state.currentUser && state.currentUser.username === profile.username);
   const key = avatarKeyOrDefault(profile.avatarKey);
+  if (profile.isPrivate || profile.profileVisibility === "private") {
+    section.innerHTML = `<article class="public-profile-card public-profile-card--state">
+      <div class="public-profile-head">
+        <div class="${esc(avatarClass(key))}" aria-hidden="true">${esc(avatarSymbolFor(key, profile.username))}</div>
+        <div class="public-profile-title">
+          <h2>${esc(profile.displayName || profile.username)}</h2>
+          <p>@${esc(profile.username)}</p>
+        </div>
+      </div>
+      <p class="public-profile-note">${esc(ownProfile ? publicProfileLabel("privateOwn", "This is how other people see your private profile.") : publicProfileLabel("privateProfile", "This profile is private."))}</p>
+      <div class="public-profile-actions">
+        <button type="button" class="result-type-btn result-type-btn--muted" data-profile-copy="${esc(profile.username)}">${esc(publicProfileLabel("copyLink", "Copy profile link"))}</button>
+        <button type="button" class="result-type-btn" data-profile-home>${esc(publicProfileLabel("backHome", "Back to quiz"))}</button>
+      </div>
+    </article>`;
+    return;
+  }
+
   const type = profile.primaryType ? getTypeData(profile.primaryType) : null;
   const typeSummary = type?.summary?.shortSummary || type?.tagline || "";
   const primaryDate = profile.primaryResultDate ? formatDate(profile.primaryResultDate) : "";
   const edit = ownProfile && state.profileEditOpen ? renderProfileEditForm(profile) : "";
+  const completedLabel = profile.showCompletedCount === false
+    ? publicProfileLabel("completedHidden", "Hidden")
+    : String(Number(profile.completedTestsCount || 0));
 
   section.innerHTML = `<div class="public-profile-layout">
     <article class="public-profile-card">
@@ -134,8 +155,8 @@ function renderPublicProfile() {
       </div>
       ${profile.bio ? `<p class="public-profile-bio">${esc(profile.bio)}</p>` : `<p class="public-profile-bio public-profile-bio--empty">${esc(publicProfileLabel("emptyBio", "No bio yet."))}</p>`}
       <div class="public-profile-meta">
-        <span>${esc(publicProfileLabel("completed", "Completed tests"))}: <strong>${esc(profile.completedTestsCount)}</strong></span>
-        ${primaryDate ? `<span>${esc(publicProfileLabel("primarySince", "Primary result"))}: <strong>${esc(primaryDate)}</strong></span>` : ""}
+        <span>${esc(publicProfileLabel("completed", "Completed tests"))}: <strong>${esc(completedLabel)}</strong></span>
+        ${profile.showPrimaryResult === false ? `<span>${esc(publicProfileLabel("primarySince", "Primary result"))}: <strong>${esc(publicProfileLabel("primaryHidden", "Hidden"))}</strong></span>` : (primaryDate ? `<span>${esc(publicProfileLabel("primarySince", "Primary result"))}: <strong>${esc(primaryDate)}</strong></span>` : "")}
       </div>
       <div class="public-profile-actions">
         ${ownProfile ? `<button type="button" class="result-type-btn" data-profile-edit>${esc(state.profileEditOpen ? publicProfileLabel("closeEdit", "Close edit") : publicProfileLabel("edit", "Edit profile"))}</button>` : ""}
@@ -143,16 +164,67 @@ function renderPublicProfile() {
       </div>
       ${typeof renderPublicProfileFriendActions === "function" ? renderPublicProfileFriendActions(profile, ownProfile) : ""}
     </article>
-    <article class="public-profile-card public-profile-type">
-      ${type ? `<div class="public-profile-type__badge">${esc(type.code)}</div>
-        <h3>${esc(type.name)}</h3>
-        <p>${esc(typeSummary)}</p>
-        <button type="button" class="result-type-btn" data-open-type="${esc(type.code)}">${esc(publicProfileLabel("readType", "Read type profile"))}</button>`
-        : `<h3>${esc(publicProfileLabel("noPrimaryTitle", "No public type yet"))}</h3>
-        <p>${esc(publicProfileLabel("noPrimaryCopy", "This user has not selected a primary result."))}</p>`}
-    </article>
+    ${renderPublicProfileTypeCard(profile, type, typeSummary)}
+    ${renderPublicProfileFriends(profile)}
     ${edit}
   </div>`;
+}
+
+function renderPublicProfileTypeCard(profile, type, typeSummary) {
+  if (profile.showPrimaryResult === false) {
+    return `<article class="public-profile-card public-profile-type public-profile-type--muted">
+      <div class="public-profile-type__badge">${esc(publicProfileLabel("hiddenBadge", "Hidden"))}</div>
+      <h3>${esc(publicProfileLabel("hiddenPrimaryTitle", "Primary MBTI is hidden"))}</h3>
+      <p>${esc(publicProfileLabel("hiddenPrimaryCopy", "This user chose not to show their primary result publicly."))}</p>
+    </article>`;
+  }
+  if (!type) {
+    return `<article class="public-profile-card public-profile-type public-profile-type--muted">
+      <div class="public-profile-type__badge">${esc(publicProfileLabel("emptyBadge", "Empty"))}</div>
+      <h3>${esc(publicProfileLabel("noPrimaryTitle", "No public type yet"))}</h3>
+      <p>${esc(publicProfileLabel("noPrimaryCopy", "This user has not selected a primary result."))}</p>
+    </article>`;
+  }
+  return `<article class="public-profile-card public-profile-type">
+    <div class="public-profile-type__badge">${esc(type.code)}</div>
+    <h3>${esc(type.name)}</h3>
+    <p>${esc(typeSummary)}</p>
+    <button type="button" class="result-type-btn" data-open-type="${esc(type.code)}">${esc(publicProfileLabel("readType", "Read type profile"))}</button>
+  </article>`;
+}
+
+function renderPublicProfileFriends(profile) {
+  if (profile.showFriends === false) {
+    return `<article class="public-profile-card public-profile-friends-card">
+      <h3>${esc(publicProfileLabel("friendsTitle", "Friends"))}</h3>
+      <p class="public-profile-state">${esc(publicProfileLabel("friendsHidden", "Friends list is hidden."))}</p>
+    </article>`;
+  }
+
+  const friends = Array.isArray(profile.friends) ? profile.friends : [];
+  if (!friends.length) {
+    return `<article class="public-profile-card public-profile-friends-card">
+      <h3>${esc(publicProfileLabel("friendsTitle", "Friends"))}</h3>
+      <p class="public-profile-state">${esc(publicProfileLabel("friendsEmpty", "No public friends to show yet."))}</p>
+    </article>`;
+  }
+
+  const cards = friends.map((friend) => {
+    const key = avatarKeyOrDefault(friend.avatarKey);
+    const primary = friend.primaryType ? `${friend.primaryType} - ${getTypeName(friend.primaryType)}` : publicProfileLabel("friendPrimaryHidden", "Primary type hidden");
+    return `<article class="public-profile-friend">
+      <div class="${esc(avatarClass(key))}" aria-hidden="true">${esc(avatarSymbolFor(key, friend.username))}</div>
+      <div>
+        <strong>${esc(friend.displayName || friend.username)}</strong>
+        <span>@${esc(friend.username)} - ${esc(primary)}</span>
+      </div>
+    </article>`;
+  }).join("");
+
+  return `<article class="public-profile-card public-profile-friends-card">
+    <h3>${esc(publicProfileLabel("friendsTitle", "Friends"))}</h3>
+    <div class="public-profile-friends-list">${cards}</div>
+  </article>`;
 }
 
 function renderProfileEditForm(profile) {
@@ -197,15 +269,9 @@ async function submitPublicProfileForm() {
     return;
   }
   state.currentUser = { ...state.currentUser, ...data };
-  state.publicProfile = {
-    ...state.publicProfile,
-    displayName: data.displayName,
-    bio: data.bio,
-    avatarKey: avatarKeyOrDefault(data.avatarKey),
-  };
   state.profileEditOpen = false;
   renderAuthPanel();
-  renderPublicProfile();
+  await openPublicProfile(state.publicProfileUsername || data.username, { updateHistory: false });
   showToast(publicProfileLabel("saved", "Profile updated"), { title: publicProfileLabel("done", "Done"), duration: 2200 });
 }
 

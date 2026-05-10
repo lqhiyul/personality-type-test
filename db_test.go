@@ -37,6 +37,13 @@ func TestOpenAppDBCreatesParentDirAndRunsMigrations(t *testing.T) {
 			}
 		})
 	}
+	for _, column := range []string{"profile_visibility", "show_primary_result", "show_completed_count", "show_friends"} {
+		t.Run("users."+column, func(t *testing.T) {
+			if !sqliteColumnExists(t, db, "users", column) {
+				t.Fatalf("expected users.%s column to exist", column)
+			}
+		})
+	}
 
 	for _, index := range []string{
 		"idx_users_username",
@@ -77,14 +84,18 @@ func TestUserStoreCreateAndReadUser(t *testing.T) {
 	}
 
 	want := User{
-		ID:          user.ID,
-		Username:    "alice",
-		Email:       "alice@example.com",
-		DisplayName: "Alice",
-		Bio:         "Testing the foundation",
-		AvatarKey:   "avatar-1",
-		CreatedAt:   fixedNow,
-		UpdatedAt:   fixedNow,
+		ID:                 user.ID,
+		Username:           "alice",
+		Email:              "alice@example.com",
+		DisplayName:        "Alice",
+		Bio:                "Testing the foundation",
+		AvatarKey:          "avatar-1",
+		ProfileVisibility:  profileVisibilityPublic,
+		ShowPrimaryResult:  true,
+		ShowCompletedCount: true,
+		ShowFriends:        true,
+		CreatedAt:          fixedNow,
+		UpdatedAt:          fixedNow,
 	}
 	if !reflect.DeepEqual(user, want) {
 		t.Fatalf("created user mismatch:\nwant: %+v\n got: %+v", want, user)
@@ -112,6 +123,97 @@ func TestUserStoreCreateAndReadUser(t *testing.T) {
 	}
 	if storedHash != "hash-for-future-auth" {
 		t.Fatalf("expected password hash to be stored internally, got %q", storedHash)
+	}
+}
+
+func TestRunMigrationsAddsPrivacyColumnsToExistingUsers(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	db, err := sql.Open("sqlite", sqliteDSN(filepath.Join(t.TempDir(), "legacy.db")))
+	if err != nil {
+		t.Fatalf("open legacy db: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	if err := pingSQLite(ctx, db); err != nil {
+		t.Fatalf("pingSQLite() error = %v", err)
+	}
+	if _, err := db.ExecContext(ctx, `CREATE TABLE users (
+		id INTEGER PRIMARY KEY,
+		username TEXT NOT NULL UNIQUE,
+		email TEXT NOT NULL UNIQUE,
+		password_hash TEXT NOT NULL,
+		display_name TEXT,
+		bio TEXT,
+		avatar_key TEXT,
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL
+	)`); err != nil {
+		t.Fatalf("create legacy users table: %v", err)
+	}
+	now := formatDBTime(time.Date(2026, 5, 9, 12, 0, 0, 0, time.UTC))
+	if _, err := db.ExecContext(ctx, `
+		INSERT INTO users (username, email, password_hash, display_name, bio, avatar_key, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, "legacy", "legacy@example.com", "hash", "Legacy", "", "", now, now); err != nil {
+		t.Fatalf("insert legacy user: %v", err)
+	}
+
+	if err := RunMigrations(ctx, db); err != nil {
+		t.Fatalf("RunMigrations() error = %v", err)
+	}
+
+	for _, column := range []string{"profile_visibility", "show_primary_result", "show_completed_count", "show_friends"} {
+		if !sqliteColumnExists(t, db, "users", column) {
+			t.Fatalf("expected users.%s column after migration", column)
+		}
+	}
+
+	store := NewUserStore(db)
+	user, err := store.GetUserByUsername(ctx, "legacy")
+	if err != nil {
+		t.Fatalf("GetUserByUsername() error = %v", err)
+	}
+	if user.ProfileVisibility != profileVisibilityPublic || !user.ShowPrimaryResult || !user.ShowCompletedCount || !user.ShowFriends {
+		t.Fatalf("expected legacy user to keep public defaults, got %+v", user)
+	}
+}
+
+func TestUserStoreUpdateProfilePrivacy(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	_, store := newTestUserStore(t)
+	user, err := store.CreateUser(ctx, CreateUserParams{
+		Username:     "privacy",
+		Email:        "privacy@example.com",
+		PasswordHash: "hash",
+		DisplayName:  "Privacy",
+	})
+	if err != nil {
+		t.Fatalf("CreateUser() error = %v", err)
+	}
+
+	showPrimary := false
+	showCompleted := false
+	showFriends := false
+	updated, err := store.UpdateUserProfile(ctx, user.ID, UpdateUserProfileParams{
+		DisplayName:        "Privacy Updated",
+		Bio:                "Quiet profile",
+		AvatarKey:          "gradient-green",
+		ProfileVisibility:  profileVisibilityPrivate,
+		ShowPrimaryResult:  &showPrimary,
+		ShowCompletedCount: &showCompleted,
+		ShowFriends:        &showFriends,
+	})
+	if err != nil {
+		t.Fatalf("UpdateUserProfile() error = %v", err)
+	}
+	if updated.ProfileVisibility != profileVisibilityPrivate || updated.ShowPrimaryResult || updated.ShowCompletedCount || updated.ShowFriends {
+		t.Fatalf("unexpected privacy update: %+v", updated)
+	}
+	if updated.Username != user.Username || updated.Email != user.Email {
+		t.Fatalf("privacy update changed identity fields: %+v", updated)
 	}
 }
 
@@ -324,4 +426,33 @@ func sqliteObjectExists(t *testing.T, db *sql.DB, objectType, name string) bool 
 		t.Fatalf("query sqlite object %s %s: %v", objectType, name, err)
 	}
 	return found == name
+}
+
+func sqliteColumnExists(t *testing.T, db *sql.DB, table, column string) bool {
+	t.Helper()
+
+	rows, err := db.Query(`PRAGMA table_info(` + table + `)`)
+	if err != nil {
+		t.Fatalf("query table info for %s: %v", table, err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cid int
+		var name string
+		var columnType string
+		var notNull int
+		var defaultValue sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &pk); err != nil {
+			t.Fatalf("scan table info for %s: %v", table, err)
+		}
+		if name == column {
+			return true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("table info rows for %s: %v", table, err)
+	}
+	return false
 }
