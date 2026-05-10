@@ -68,6 +68,11 @@ type publicProfileFriendshipResponse struct {
 }
 
 func (a *App) handlePublicUserProfile(w http.ResponseWriter, r *http.Request) {
+	if username, ok := publicProfileCommentsUsernameFromPath(r.URL.Path); ok {
+		a.handlePublicProfileComments(w, r, username)
+		return
+	}
+
 	if r.Method != http.MethodGet {
 		methodNotAllowed(w, http.MethodGet)
 		return

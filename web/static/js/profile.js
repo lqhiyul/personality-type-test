@@ -69,6 +69,10 @@ async function openPublicProfile(username, options = {}) {
   state.publicProfileLoading = true;
   state.publicProfileError = "";
   state.publicProfile = null;
+  state.publicProfileComments = [];
+  state.publicProfileCommentsLoading = false;
+  state.publicProfileCommentsError = "";
+  state.publicProfileCommentSubmitting = false;
   state.profileEditOpen = false;
   setPublicProfileViewVisible();
   renderPublicProfile();
@@ -83,6 +87,9 @@ async function openPublicProfile(username, options = {}) {
     if (!response.ok) throw new Error(publicProfileLabel("loadFailed", "Could not load profile"));
     state.publicProfile = await response.json();
     state.profileEditAvatarKey = avatarKeyOrDefault(state.publicProfile.avatarKey);
+    if (!state.publicProfile.isPrivate && state.publicProfile.profileVisibility !== "private") {
+      await loadPublicProfileComments(normalized, { render: false });
+    }
   } catch (error) {
     state.publicProfileError = error.message || publicProfileLabel("loadFailed", "Could not load profile");
   } finally {
@@ -132,6 +139,7 @@ function renderPublicProfile() {
         <button type="button" class="result-type-btn result-type-btn--muted" data-profile-copy="${esc(profile.username)}">${esc(publicProfileLabel("copyLink", "Copy profile link"))}</button>
         <button type="button" class="result-type-btn" data-profile-home>${esc(publicProfileLabel("backHome", "Back to quiz"))}</button>
       </div>
+      ${renderPublicProfileCommentsHidden()}
     </article>`;
     return;
   }
@@ -167,6 +175,7 @@ function renderPublicProfile() {
     ${renderPublicProfileTypeCard(profile, type, typeSummary)}
     ${renderPublicProfileFriends(profile)}
     ${edit}
+    ${renderPublicProfileComments(profile)}
   </div>`;
 }
 
@@ -227,6 +236,73 @@ function renderPublicProfileFriends(profile) {
   </article>`;
 }
 
+function renderPublicProfileCommentsHidden() {
+  return `<section class="public-profile-comments public-profile-comments--hidden" aria-label="${esc(publicProfileLabel("commentsTitle", "Comments"))}">
+    <h3>${esc(publicProfileLabel("commentsTitle", "Comments"))}</h3>
+    <p class="public-profile-state">${esc(publicProfileLabel("commentsPrivate", "Comments are hidden for private profiles"))}</p>
+  </section>`;
+}
+
+function renderPublicProfileComments(profile) {
+  const comments = Array.isArray(state.publicProfileComments) ? state.publicProfileComments : [];
+  const items = state.publicProfileCommentsLoading
+    ? `<p class="public-profile-state">${esc(publicProfileLabel("commentsLoading", "Loading comments..."))}</p>`
+    : state.publicProfileCommentsError
+      ? `<p class="public-profile-state">${esc(state.publicProfileCommentsError)}</p>`
+      : comments.length
+        ? `<div class="public-profile-comments__list">${comments.map((comment) => renderPublicProfileComment(profile, comment)).join("")}</div>`
+        : `<p class="public-profile-state">${esc(publicProfileLabel("commentsEmpty", "No comments yet"))}</p>`;
+  const form = renderPublicProfileCommentForm();
+
+  return `<article class="public-profile-card public-profile-comments">
+    <div class="public-profile-comments__head">
+      <h3>${esc(publicProfileLabel("commentsTitle", "Comments"))}</h3>
+      <span>${esc(String(comments.length))}</span>
+    </div>
+    ${items}
+    ${form}
+  </article>`;
+}
+
+function renderPublicProfileComment(profile, comment) {
+  const author = comment.author || {};
+  const key = avatarKeyOrDefault(author.avatarKey);
+  const canDelete = canDeletePublicProfileComment(profile, comment);
+  return `<article class="public-profile-comment">
+    <div class="${esc(avatarClass(key))}" aria-hidden="true">${esc(avatarSymbolFor(key, author.username))}</div>
+    <div class="public-profile-comment__body">
+      <div class="public-profile-comment__meta">
+        <div>
+          <strong>${esc(author.displayName || author.username || publicProfileLabel("commentAuthor", "User"))}</strong>
+          <span>@${esc(author.username || "")} - ${esc(formatDate(comment.createdAt))}</span>
+        </div>
+        ${canDelete ? `<button type="button" class="profile-result__btn profile-result__btn--danger" data-profile-comment-delete="${esc(comment.id)}">${esc(publicProfileLabel("commentDelete", "Delete"))}</button>` : ""}
+      </div>
+      <p>${esc(comment.body || "")}</p>
+    </div>
+  </article>`;
+}
+
+function renderPublicProfileCommentForm() {
+  if (!state.currentUser) {
+    return `<p class="public-profile-comments__login">${esc(publicProfileLabel("commentsLogin", "Log in to comment"))}</p>`;
+  }
+  return `<form id="publicProfileCommentForm" class="public-profile-comment-form">
+    <label for="publicProfileCommentBody">${esc(publicProfileLabel("commentWrite", "Write a comment"))}</label>
+    <textarea id="publicProfileCommentBody" maxlength="500" rows="3" placeholder="${esc(publicProfileLabel("commentWrite", "Write a comment"))}" ${state.publicProfileCommentSubmitting ? "disabled" : ""}></textarea>
+    <div class="public-profile-comment-form__actions">
+      <span>${esc(publicProfileLabel("commentLimit", "500 characters max"))}</span>
+      <button type="submit" class="btn primary btn-compact" ${state.publicProfileCommentSubmitting ? "disabled" : ""}>${esc(publicProfileLabel("commentPost", "Post comment"))}</button>
+    </div>
+  </form>`;
+}
+
+function canDeletePublicProfileComment(profile, comment) {
+  const currentUsername = state.currentUser?.username;
+  const authorUsername = comment?.author?.username;
+  return Boolean(currentUsername && (currentUsername === profile.username || currentUsername === authorUsername));
+}
+
 function renderProfileEditForm(profile) {
   const selected = avatarKeyOrDefault(state.profileEditAvatarKey || profile.avatarKey);
   const buttons = AVATAR_PRESETS.map((key) => {
@@ -275,6 +351,70 @@ async function submitPublicProfileForm() {
   showToast(publicProfileLabel("saved", "Profile updated"), { title: publicProfileLabel("done", "Done"), duration: 2200 });
 }
 
+async function loadPublicProfileComments(username, options = {}) {
+  const { render = true } = options;
+  state.publicProfileCommentsLoading = true;
+  state.publicProfileCommentsError = "";
+  if (render) renderPublicProfile();
+  try {
+    const response = await fetchPublicProfileComments(username);
+    if (response.status === 403) {
+      state.publicProfileComments = [];
+      state.publicProfileCommentsError = publicProfileLabel("commentsPrivate", "Comments are hidden for private profiles");
+      return;
+    }
+    if (!response.ok) throw new Error(publicProfileLabel("commentsLoadFailed", "Could not load comments"));
+    const data = await response.json();
+    state.publicProfileComments = Array.isArray(data.comments) ? data.comments : [];
+  } catch (error) {
+    state.publicProfileComments = [];
+    state.publicProfileCommentsError = error.message || publicProfileLabel("commentsLoadFailed", "Could not load comments");
+  } finally {
+    state.publicProfileCommentsLoading = false;
+    if (render) renderPublicProfile();
+  }
+}
+
+async function submitPublicProfileComment() {
+  if (!state.currentUser || !state.publicProfile) return;
+  const input = E("publicProfileCommentBody");
+  const body = String(input?.value || "").trim();
+  if (!body) {
+    showToast(publicProfileLabel("commentEmpty", "Comment cannot be empty"), { title: publicProfileLabel("error", "Profile error"), tone: "error" });
+    return;
+  }
+  if ([...body].length > 500) {
+    showToast(publicProfileLabel("commentTooLong", "Comment is too long"), { title: publicProfileLabel("error", "Profile error"), tone: "error" });
+    return;
+  }
+
+  state.publicProfileCommentSubmitting = true;
+  renderPublicProfile();
+  const { response, data } = await postPublicProfileComment(state.publicProfile.username, body);
+  state.publicProfileCommentSubmitting = false;
+  if (!response.ok) {
+    renderPublicProfile();
+    throw new Error(data.error || publicProfileLabel("commentSaveFailed", "Could not post comment"));
+  }
+  state.publicProfileComments = [data, ...state.publicProfileComments];
+  renderPublicProfile();
+}
+
+async function removePublicProfileComment(id) {
+  const confirmed = await askConfirm(publicProfileLabel("commentDeleteConfirm", "Delete this comment?"));
+  if (!confirmed) return;
+  const response = await deletePublicProfileComment(id);
+  if (!response.ok) {
+    let data = {};
+    try {
+      data = await response.json();
+    } catch (_) {}
+    throw new Error(data.error || publicProfileLabel("commentDeleteFailed", "Could not delete comment"));
+  }
+  state.publicProfileComments = state.publicProfileComments.filter((comment) => String(comment.id) !== String(id));
+  renderPublicProfile();
+}
+
 async function copyProfileLink(username) {
   const url = profileURLForUsername(username);
   try {
@@ -312,12 +452,23 @@ function wireProfileEvents() {
     const copy = target?.closest("[data-profile-copy]");
     if (copy?.dataset.profileCopy) {
       copyProfileLink(copy.dataset.profileCopy);
+      return;
+    }
+    const commentDelete = target?.closest("[data-profile-comment-delete]");
+    if (commentDelete?.dataset.profileCommentDelete) {
+      removePublicProfileComment(commentDelete.dataset.profileCommentDelete).catch((error) => showToast(error.message, { title: publicProfileLabel("error", "Profile error"), tone: "error" }));
     }
   });
 
   E("profileSection")?.addEventListener("submit", (event) => {
-    if (!(event.target instanceof HTMLFormElement) || event.target.id !== "publicProfileForm") return;
+    if (!(event.target instanceof HTMLFormElement)) return;
     event.preventDefault();
-    submitPublicProfileForm().catch((error) => showToast(error.message, { title: publicProfileLabel("error", "Profile error"), tone: "error" }));
+    if (event.target.id === "publicProfileForm") {
+      submitPublicProfileForm().catch((error) => showToast(error.message, { title: publicProfileLabel("error", "Profile error"), tone: "error" }));
+      return;
+    }
+    if (event.target.id === "publicProfileCommentForm") {
+      submitPublicProfileComment().catch((error) => showToast(error.message, { title: publicProfileLabel("error", "Profile error"), tone: "error" }));
+    }
   });
 }
