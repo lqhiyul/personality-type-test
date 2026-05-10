@@ -1540,6 +1540,8 @@ a:focus-visible{
   left:0;
   z-index:40;
   width:min(360px, calc(100vw - 28px));
+  max-height:min(760px, calc(100vh - 78px));
+  overflow:auto;
   padding:16px;
   border:1px solid rgba(255,255,255,.09);
   border-radius:20px;
@@ -1877,6 +1879,155 @@ a:focus-visible{
   font-weight:850;
 }
 
+.profile-friends{
+  display:grid;
+  gap:12px;
+}
+
+.profile-friends__head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:16px;
+  background:rgba(255,255,255,.03);
+}
+
+.profile-friends__head h3,
+.profile-friends__block h4{
+  margin:0;
+  color:rgba(245,247,255,.9);
+  line-height:1.3;
+}
+
+.profile-friends__head h3{
+  font-size:15px;
+}
+
+.profile-friends__block{
+  display:grid;
+  gap:9px;
+}
+
+.profile-friends__block h4{
+  font-size:13px;
+}
+
+.profile-friends__list{
+  display:grid;
+  gap:10px;
+}
+
+.profile-friends__empty{
+  padding:12px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;
+  background:rgba(255,255,255,.025);
+  color:rgba(232,236,255,.62);
+  font-size:13px;
+  line-height:1.5;
+}
+
+.profile-friend-card{
+  display:grid;
+  gap:10px;
+  min-width:0;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;
+  background:linear-gradient(180deg, rgba(24,27,39,.62), rgba(9,11,18,.84));
+}
+
+.profile-friend-card__top{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:10px;
+  align-items:center;
+}
+
+.profile-friend-card__top .avatar-preset{
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  font-size:15px;
+}
+
+.profile-friend-card__identity{
+  min-width:0;
+}
+
+.profile-friend-card__identity strong,
+.profile-friend-card__identity span{
+  display:block;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.profile-friend-card__identity strong{
+  color:rgba(245,247,255,.92);
+  font-size:13px;
+}
+
+.profile-friend-card__identity span,
+.profile-friend-card__meta{
+  color:rgba(232,236,255,.58);
+  font-size:12px;
+  line-height:1.4;
+}
+
+.profile-friend-card__actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.profile-friend-compat{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+}
+
+.profile-friend-compat span{
+  display:grid;
+  gap:2px;
+  min-width:0;
+  padding:8px;
+  border:1px solid rgba(158,230,184,.14);
+  border-radius:12px;
+  background:rgba(158,230,184,.06);
+  color:rgba(232,236,255,.62);
+  font-size:10px;
+  font-weight:800;
+  line-height:1.2;
+  text-align:center;
+}
+
+.profile-friend-compat strong{
+  color:#c6f2d4;
+  font-size:13px;
+}
+
+.profile-friend-compat--empty{
+  display:block;
+  padding:9px 10px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:12px;
+  background:rgba(255,255,255,.025);
+  color:rgba(232,236,255,.62);
+  font-size:12px;
+  line-height:1.45;
+}
+
+.profile-result__btn--muted{
+  border-color:rgba(201,187,255,.16);
+  background:rgba(255,255,255,.04);
+  color:rgba(238,242,255,.78);
+}
+
 .account-profile-links{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -2061,6 +2212,33 @@ a:focus-visible{
   margin-top:18px;
 }
 
+.public-profile-friend-actions{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px;
+  margin-top:12px;
+}
+
+.public-profile-friend-state{
+  display:inline-flex;
+  align-items:center;
+  min-height:36px;
+  padding:8px 11px;
+  border:1px solid rgba(158,230,184,.2);
+  border-radius:999px;
+  background:rgba(158,230,184,.08);
+  color:#c6f2d4;
+  font-size:12px;
+  font-weight:850;
+}
+
+.public-profile-friend-state--muted{
+  border-color:rgba(255,255,255,.08);
+  background:rgba(255,255,255,.035);
+  color:rgba(232,236,255,.66);
+}
+
 .public-profile-type{
   display:grid;
   gap:12px;
@@ -2154,6 +2332,15 @@ a:focus-visible{
 @media (max-width:520px){
   .account-profile-links,
   .avatar-choice-grid{
+    grid-template-columns:1fr;
+  }
+
+  .profile-friends__head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .profile-friend-compat{
     grid-template-columns:1fr;
   }
 

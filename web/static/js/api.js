@@ -11,6 +11,9 @@ const API = {
   myResults: "/api/me/results",
   myProfile: "/api/me/profile",
   users: "/api/users",
+  friends: "/api/friends",
+  friendRequest: "/api/friends/request",
+  friendRequests: "/api/friends/requests",
 };
 
 async function requestJSON(url, options = {}) {
@@ -89,4 +92,24 @@ function fetchPublicProfile(username) {
 
 function updateMyProfile(payload) {
   return requestJSON(API.myProfile, { method: "PATCH", body: payload });
+}
+
+function sendFriendRequest(username) {
+  return requestJSON(API.friendRequest, { method: "POST", body: { username } });
+}
+
+function fetchFriends() {
+  return fetch(API.friends);
+}
+
+function fetchFriendRequests() {
+  return fetch(API.friendRequests);
+}
+
+function acceptFriendRequest(id) {
+  return requestJSON(`${API.friendRequests}/${encodeURIComponent(id)}/accept`, { method: "POST" });
+}
+
+function deleteFriendship(id) {
+  return fetch(`${API.friends}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }

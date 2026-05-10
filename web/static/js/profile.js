@@ -141,6 +141,7 @@ function renderPublicProfile() {
         ${ownProfile ? `<button type="button" class="result-type-btn" data-profile-edit>${esc(state.profileEditOpen ? publicProfileLabel("closeEdit", "Close edit") : publicProfileLabel("edit", "Edit profile"))}</button>` : ""}
         <button type="button" class="result-type-btn result-type-btn--muted" data-profile-copy="${esc(profile.username)}">${esc(publicProfileLabel("copyLink", "Copy profile link"))}</button>
       </div>
+      ${typeof renderPublicProfileFriendActions === "function" ? renderPublicProfileFriendActions(profile, ownProfile) : ""}
     </article>
     <article class="public-profile-card public-profile-type">
       ${type ? `<div class="public-profile-type__badge">${esc(type.code)}</div>

@@ -49,6 +49,7 @@ function applyAuthStaticText() {
   setText("profileRefreshBtn", profileLabel("refresh", "Refresh"));
   setText("profileResultsTitle", profileLabel("historyTitle", "Result history"));
   renderAuthPanel();
+  if (typeof applyFriendsStaticText === "function") applyFriendsStaticText();
 }
 
 function renderAuthPanel() {
@@ -88,6 +89,9 @@ function renderAuthPanel() {
       avatar.textContent = typeof avatarSymbolFor === "function" ? avatarSymbolFor(key, user.username) : (user.username || "A").slice(0, 1).toUpperCase();
     }
     renderProfileResults();
+    if (typeof renderFriendsPanel === "function") renderFriendsPanel();
+  } else if (typeof renderFriendsPanel === "function") {
+    renderFriendsPanel();
   }
   if (typeof renderPublicProfile === "function" && state.publicProfile && !E("profileSection")?.hidden) renderPublicProfile();
 }
@@ -165,6 +169,7 @@ async function initAuth() {
     const response = await fetchCurrentAccount();
     if (response.status === 401) {
       state.currentUser = null;
+      if (typeof resetFriendsState === "function") resetFriendsState();
       renderAuthPanel();
       return;
     }
@@ -172,6 +177,10 @@ async function initAuth() {
     state.currentUser = await response.json();
     renderAuthPanel();
     await loadProfileResults({ silent: true });
+    if (typeof loadFriendsData === "function") await loadFriendsData({ silent: true });
+    if (state.publicProfileUsername && !E("profileSection")?.hidden && typeof openPublicProfile === "function") {
+      await openPublicProfile(state.publicProfileUsername, { updateHistory: false });
+    }
   } catch (_) {}
 }
 
@@ -205,6 +214,10 @@ async function submitAuthForm() {
   setAuthNotice(mode === "register" ? authLabel("registered", "Account created") : authLabel("loggedIn", "Logged in"), "success");
   renderAuthPanel();
   await loadProfileResults({ silent: true });
+  if (typeof loadFriendsData === "function") await loadFriendsData({ silent: true });
+  if (state.publicProfileUsername && !E("profileSection")?.hidden && typeof openPublicProfile === "function") {
+    await openPublicProfile(state.publicProfileUsername, { updateHistory: false });
+  }
   showToast(mode === "register" ? authLabel("registered", "Account created") : authLabel("loggedIn", "Logged in"), { title: authLabel("done", "Done"), duration: 2200 });
 }
 
@@ -216,8 +229,12 @@ async function logoutUserAccount() {
   }
   state.currentUser = null;
   state.profileResults = [];
+  if (typeof resetFriendsState === "function") resetFriendsState();
   setAuthNotice(authLabel("loggedOut", "Logged out"), "success");
   renderAuthPanel();
+  if (state.publicProfileUsername && !E("profileSection")?.hidden && typeof openPublicProfile === "function") {
+    await openPublicProfile(state.publicProfileUsername, { updateHistory: false });
+  }
   showToast(authLabel("loggedOut", "Logged out"), { title: authLabel("done", "Done"), duration: 2200 });
 }
 

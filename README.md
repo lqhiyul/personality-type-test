@@ -8,7 +8,7 @@
 
 Note: The Render free plan may spin down after inactivity, so the first request can take 30–60 seconds.
 
-A lightweight full-stack personality type test with a Go HTTP backend, modular vanilla JavaScript frontend, local JSON result storage, SQLite-backed user accounts, result insights, compatibility, share cards, and an admin/export panel.
+A lightweight full-stack personality type test with a Go HTTP backend, modular vanilla JavaScript frontend, local JSON result storage, SQLite-backed user accounts, result insights, compatibility, friend requests, share cards, and an admin/export panel.
 
 **Quick links:** [Preview](#preview) | [Features](#features) | [Quick Start](#quick-start) | [Docker](#docker) | [Quality Checks](#quality-checks) | [API](#api-overview)
 
@@ -41,6 +41,7 @@ When those files exist, replace this note with a short screenshot gallery.
 - Email/password user registration and login with bcrypt password hashing and an HttpOnly session cookie.
 - Private My Account result history for logged-in users, including primary result selection and deleting own saved results.
 - Public username profiles with editable display name, short bio, avatar preset, and optional primary MBTI result.
+- Simple friends system with incoming friend requests, accepting requests, removing friends, and compatibility scores based on both users' primary MBTI results.
 - Local JSON persistence with safer temp-file writes and rename.
 - SQLite user storage for accounts and logged-in saved test results.
 - Embedded static assets, Docker support, GitHub Actions, Go tests, and JavaScript syntax checks.
@@ -127,6 +128,8 @@ When a logged-in user completes the quiz, the app keeps the existing anonymous J
 
 Users can also open a public profile at `/?profile=username`. Public profiles show only safe public data: username, display name, bio, avatar preset, completed test count, and the selected primary MBTI type if one exists. Email, password hashes, private answers, and full saved result history are not public.
 
+Logged-in users can send friend requests from another user's public profile. Incoming requests appear in My Account, where the target user can accept them. Accepted friends are shown in both users' friends lists. If both users have selected a primary MBTI result, the friends list shows friendship, relationship, and work compatibility scores. If either user has no primary result, the UI shows compatibility as unavailable.
+
 The regular user auth endpoints are separate from the admin endpoints:
 
 | Method | Route | Description |
@@ -140,6 +143,11 @@ The regular user auth endpoints are separate from the admin endpoints:
 | `POST` | `/api/me/results/{id}/primary` | Mark one of the current user's saved results as primary. |
 | `DELETE` | `/api/me/results/{id}` | Delete one of the current user's saved results. |
 | `GET` | `/api/users/{username}` | Return a safe public profile by username. |
+| `POST` | `/api/friends/request` | Send a friend request to a username. |
+| `GET` | `/api/friends/requests` | List incoming pending friend requests. |
+| `POST` | `/api/friends/requests/{id}/accept` | Accept an incoming pending friend request. |
+| `GET` | `/api/friends` | List accepted friends with primary type and compatibility state. |
+| `DELETE` | `/api/friends/{id}` | Remove an accepted friendship that includes the current user. |
 
 The current anonymous quiz flow still saves submissions through the existing JSON `DATA_FILE` store, so the admin list, export, delete, clear, and stats tools continue to use the same behavior as before. Logged-in result history is private to the current user; the public profile shows only the selected primary type and aggregate count.
 
@@ -243,6 +251,11 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 | `POST` | `/api/me/results/{id}/primary` | Set the current user's primary saved result. |
 | `DELETE` | `/api/me/results/{id}` | Delete one saved result owned by the current user. |
 | `GET` | `/api/users/{username}` | Return safe public profile data by username. |
+| `POST` | `/api/friends/request` | Send a friend request to another user by username. |
+| `GET` | `/api/friends/requests` | Return incoming pending friend requests for the current user. |
+| `POST` | `/api/friends/requests/{id}/accept` | Accept an incoming friend request addressed to the current user. |
+| `GET` | `/api/friends` | Return accepted friends with safe public fields and compatibility. |
+| `DELETE` | `/api/friends/{id}` | Remove an accepted friendship that the current user belongs to. |
 | `POST` | `/api/login` | Admin login with failed-attempt rate limiting. |
 | `POST` | `/api/logout` | Admin logout and session cookie cleanup. |
 | `GET` | `/api/results` | List saved results. |
@@ -260,6 +273,8 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 - Regular user auth uses a separate `user_session` cookie from the admin session cookie.
 - Saved result history endpoints require a regular user session and scope every list, primary, and delete action by the current user ID.
 - Public profile responses never include email, password hashes, private answers, or full saved result history.
+- Friend endpoints require a regular user session, prevent self-requests and duplicate pairs, allow accepting only by the addressee, and allow removing only accepted friendships that include the current user.
+- Friend list and request responses expose only safe public account fields, primary MBTI type, and compatibility state.
 - Profile editing is limited to display name, bio, and a fixed allowlist of CSS avatar presets. There are no custom avatar uploads.
 - Failed admin and regular user login attempts are rate-limited in memory per IP address.
 - Session cookies are `HttpOnly` and `SameSite=Lax`.
@@ -272,7 +287,8 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 - JSON file storage is simple and reviewable, but it is not ideal for multi-instance deployments.
 - Anonymous submissions still use the JSON store; logged-in saved history is stored separately in SQLite.
 - Sessions and login rate limits are in memory, so they reset when the process restarts.
-- There is no Google OAuth, email verification, password reset, custom avatar upload, friends, comments, or messages yet.
+- There is no Google OAuth, email verification, password reset, custom avatar upload, comments, private messages, real-time notifications, blocking, or reporting yet.
+- Friend requests are intentionally simple: no rejection UI, no notification feed, and no real-time updates.
 - SQLite account data needs persistent storage on Render if it must survive restarts or redeploys.
 - Real screenshots still need to be captured manually before the README has a full visual gallery.
 - Stats are computed from the saved JSON result fields; missing legacy timestamps are omitted from `latestResultAt`.

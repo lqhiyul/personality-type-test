@@ -147,6 +147,7 @@ function applyStaticText() {
   setText("demoCancelBtn", t("ui.admin.demoCancel", "Cancel"));
   renderDemoTypeOptions();
   if (typeof applyAuthStaticText === "function") applyAuthStaticText();
+  if (typeof applyFriendsStaticText === "function") applyFriendsStaticText();
   if (typeof renderPublicProfile === "function" && state.publicProfile && !E("profileSection")?.hidden) renderPublicProfile();
 
   const trust = E("trustNote");
