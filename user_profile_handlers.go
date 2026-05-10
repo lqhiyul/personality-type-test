@@ -29,20 +29,37 @@ var allowedAvatarKeys = map[string]struct{}{
 }
 
 type profileUpdateRequest struct {
-	DisplayName string `json:"displayName"`
-	Bio         string `json:"bio"`
-	AvatarKey   string `json:"avatarKey"`
+	DisplayName        *string `json:"displayName"`
+	Bio                *string `json:"bio"`
+	AvatarKey          *string `json:"avatarKey"`
+	ProfileVisibility  *string `json:"profileVisibility"`
+	ShowPrimaryResult  *bool   `json:"showPrimaryResult"`
+	ShowCompletedCount *bool   `json:"showCompletedCount"`
+	ShowFriends        *bool   `json:"showFriends"`
 }
 
 type publicProfileResponse struct {
 	Username            string                           `json:"username"`
 	DisplayName         string                           `json:"displayName"`
-	Bio                 string                           `json:"bio"`
 	AvatarKey           string                           `json:"avatarKey"`
-	PrimaryType         string                           `json:"primaryType"`
+	ProfileVisibility   string                           `json:"profileVisibility"`
+	IsPrivate           bool                             `json:"isPrivate"`
+	Bio                 string                           `json:"bio,omitempty"`
+	PrimaryType         string                           `json:"primaryType,omitempty"`
 	PrimaryResultDate   string                           `json:"primaryResultDate,omitempty"`
-	CompletedTestsCount int                              `json:"completedTestsCount"`
+	CompletedTestsCount *int                             `json:"completedTestsCount,omitempty"`
+	ShowPrimaryResult   bool                             `json:"showPrimaryResult"`
+	ShowCompletedCount  bool                             `json:"showCompletedCount"`
+	ShowFriends         bool                             `json:"showFriends"`
+	Friends             []publicProfileFriendResponse    `json:"friends,omitempty"`
 	ViewerFriendship    *publicProfileFriendshipResponse `json:"viewerFriendship,omitempty"`
+}
+
+type publicProfileFriendResponse struct {
+	Username    string `json:"username"`
+	DisplayName string `json:"displayName"`
+	AvatarKey   string `json:"avatarKey"`
+	PrimaryType string `json:"primaryType,omitempty"`
 }
 
 type publicProfileFriendshipResponse struct {
@@ -97,7 +114,13 @@ func (a *App) handleMyProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params, err := validateProfileUpdate(req)
+	current, err := a.userStore.GetUserByID(r.Context(), userID)
+	if err != nil {
+		writeJSONError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	params, err := validateProfileUpdate(req, current)
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
@@ -116,17 +139,32 @@ func (a *App) handleMyProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) newPublicProfileResponse(r *http.Request, user User) (publicProfileResponse, error) {
-	count, err := a.userStore.CountUserTestResults(r.Context(), user.ID)
-	if err != nil {
-		return publicProfileResponse{}, err
+	response := publicProfileResponse{
+		Username:           user.Username,
+		DisplayName:        publicDisplayName(user),
+		AvatarKey:          publicAvatarKey(user.AvatarKey),
+		ProfileVisibility:  normalizedProfileVisibilityOrDefault(user.ProfileVisibility),
+		IsPrivate:          normalizedProfileVisibilityOrDefault(user.ProfileVisibility) == profileVisibilityPrivate,
+		ShowPrimaryResult:  user.ShowPrimaryResult,
+		ShowCompletedCount: user.ShowCompletedCount,
+		ShowFriends:        user.ShowFriends,
 	}
 
-	response := publicProfileResponse{
-		Username:            user.Username,
-		DisplayName:         publicDisplayName(user),
-		Bio:                 user.Bio,
-		AvatarKey:           publicAvatarKey(user.AvatarKey),
-		CompletedTestsCount: count,
+	if response.IsPrivate {
+		response.ShowPrimaryResult = false
+		response.ShowCompletedCount = false
+		response.ShowFriends = false
+		return response, nil
+	}
+
+	response.Bio = user.Bio
+
+	if user.ShowCompletedCount {
+		count, err := a.userStore.CountUserTestResults(r.Context(), user.ID)
+		if err != nil {
+			return publicProfileResponse{}, err
+		}
+		response.CompletedTestsCount = &count
 	}
 
 	viewerFriendship, err := a.newPublicProfileFriendshipResponse(r, user)
@@ -135,15 +173,25 @@ func (a *App) newPublicProfileResponse(r *http.Request, user User) (publicProfil
 	}
 	response.ViewerFriendship = viewerFriendship
 
-	primary, err := a.userStore.GetPrimaryUserTestResult(r.Context(), user.ID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return response, nil
+	if user.ShowPrimaryResult {
+		primary, err := a.userStore.GetPrimaryUserTestResult(r.Context(), user.ID)
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				return publicProfileResponse{}, err
+			}
+		} else {
+			response.PrimaryType = primary.MBTIType
+			response.PrimaryResultDate = primary.CreatedAt.Format(time.RFC3339Nano)
 		}
-		return publicProfileResponse{}, err
 	}
-	response.PrimaryType = primary.MBTIType
-	response.PrimaryResultDate = primary.CreatedAt.Format(time.RFC3339Nano)
+
+	if user.ShowFriends {
+		friends, err := a.userStore.ListFriends(r.Context(), user.ID)
+		if err != nil {
+			return publicProfileResponse{}, err
+		}
+		response.Friends = newPublicProfileFriendResponses(friends)
+	}
 	return response, nil
 }
 
@@ -189,32 +237,53 @@ func publicProfileUsernameFromPath(requestPath string) (string, bool) {
 	return username, true
 }
 
-func validateProfileUpdate(req profileUpdateRequest) (UpdateUserProfileParams, error) {
-	displayName := strings.TrimSpace(req.DisplayName)
-	if displayName == "" {
-		return UpdateUserProfileParams{}, errors.New("display name is required")
-	}
-	if utf8.RuneCountInString(displayName) > maxDisplayNameLength || containsProfileControl(displayName) {
-		return UpdateUserProfileParams{}, errors.New("display name must be 1 to 64 characters")
-	}
-
-	bio := strings.TrimSpace(req.Bio)
-	if utf8.RuneCountInString(bio) > maxProfileBioLength || containsProfileControl(bio) {
-		return UpdateUserProfileParams{}, errors.New("bio must be 280 characters or fewer")
+func validateProfileUpdate(req profileUpdateRequest, current User) (UpdateUserProfileParams, error) {
+	displayName := current.DisplayName
+	if req.DisplayName != nil {
+		displayName = strings.TrimSpace(*req.DisplayName)
+		if displayName == "" {
+			return UpdateUserProfileParams{}, errors.New("display name is required")
+		}
+		if utf8.RuneCountInString(displayName) > maxDisplayNameLength || containsProfileControl(displayName) {
+			return UpdateUserProfileParams{}, errors.New("display name must be 1 to 64 characters")
+		}
 	}
 
-	avatarKey := strings.TrimSpace(req.AvatarKey)
-	if avatarKey == "" {
-		avatarKey = defaultAvatarKey
+	bio := current.Bio
+	if req.Bio != nil {
+		bio = strings.TrimSpace(*req.Bio)
+		if utf8.RuneCountInString(bio) > maxProfileBioLength || containsProfileControl(bio) {
+			return UpdateUserProfileParams{}, errors.New("bio must be 280 characters or fewer")
+		}
 	}
-	if !isAllowedAvatarKey(avatarKey) {
-		return UpdateUserProfileParams{}, errors.New("avatar preset is not valid")
+
+	avatarKey := current.AvatarKey
+	if req.AvatarKey != nil {
+		avatarKey = strings.TrimSpace(*req.AvatarKey)
+		if avatarKey == "" {
+			avatarKey = defaultAvatarKey
+		}
+		if !isAllowedAvatarKey(avatarKey) {
+			return UpdateUserProfileParams{}, errors.New("avatar preset is not valid")
+		}
+	}
+
+	profileVisibility := current.ProfileVisibility
+	if req.ProfileVisibility != nil {
+		profileVisibility = strings.TrimSpace(*req.ProfileVisibility)
+		if profileVisibility != profileVisibilityPublic && profileVisibility != profileVisibilityPrivate {
+			return UpdateUserProfileParams{}, errors.New("profile visibility must be public or private")
+		}
 	}
 
 	return UpdateUserProfileParams{
-		DisplayName: displayName,
-		Bio:         bio,
-		AvatarKey:   avatarKey,
+		DisplayName:        displayName,
+		Bio:                bio,
+		AvatarKey:          avatarKey,
+		ProfileVisibility:  profileVisibility,
+		ShowPrimaryResult:  req.ShowPrimaryResult,
+		ShowCompletedCount: req.ShowCompletedCount,
+		ShowFriends:        req.ShowFriends,
 	}, nil
 }
 
@@ -245,4 +314,23 @@ func publicAvatarKey(value string) string {
 func isAllowedAvatarKey(key string) bool {
 	_, ok := allowedAvatarKeys[key]
 	return ok
+}
+
+func newPublicProfileFriendResponses(friends []FriendListItem) []publicProfileFriendResponse {
+	out := make([]publicProfileFriendResponse, 0, len(friends))
+	for _, friend := range friends {
+		if normalizedProfileVisibilityOrDefault(friend.User.ProfileVisibility) == profileVisibilityPrivate {
+			continue
+		}
+		response := publicProfileFriendResponse{
+			Username:    friend.User.Username,
+			DisplayName: publicDisplayName(friend.User),
+			AvatarKey:   publicAvatarKey(friend.User.AvatarKey),
+		}
+		if friend.User.ShowPrimaryResult {
+			response.PrimaryType = friend.PrimaryType
+		}
+		out = append(out, response)
+	}
+	return out
 }

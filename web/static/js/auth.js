@@ -49,6 +49,15 @@ function applyAuthStaticText() {
   setText("profilePrimaryLabel", profileLabel("primaryLabel", "Primary type"));
   setText("profileRefreshBtn", profileLabel("refresh", "Refresh"));
   setText("profileResultsTitle", profileLabel("historyTitle", "Result history"));
+  setText("profilePrivacyEyebrow", profileLabel("privacyEyebrow", "Privacy"));
+  setText("profilePrivacyTitle", profileLabel("privacyTitle", "Profile privacy"));
+  setText("profilePrivacySaveBtn", profileLabel("privacySave", "Save"));
+  setText("profileVisibilityLabel", profileLabel("visibility", "Profile visibility"));
+  setText("profileVisibilityPublicOption", profileLabel("visibilityPublic", "Public"));
+  setText("profileVisibilityPrivateOption", profileLabel("visibilityPrivate", "Private"));
+  setText("showPrimaryResultLabel", profileLabel("showPrimary", "Show primary MBTI"));
+  setText("showCompletedCountLabel", profileLabel("showCompleted", "Show completed tests count"));
+  setText("showFriendsLabel", profileLabel("showFriends", "Show friends list"));
   renderAuthPanel();
   if (typeof applyFriendsStaticText === "function") applyFriendsStaticText();
 }
@@ -89,12 +98,52 @@ function renderAuthPanel() {
       avatar.className = `account-avatar ${key && typeof avatarClass === "function" ? avatarClass(key) : ""}`.trim();
       avatar.textContent = typeof avatarSymbolFor === "function" ? avatarSymbolFor(key, user.username) : (user.username || "A").slice(0, 1).toUpperCase();
     }
+    renderProfilePrivacySettings();
     renderProfileResults();
     if (typeof renderFriendsPanel === "function") renderFriendsPanel();
   } else if (typeof renderFriendsPanel === "function") {
     renderFriendsPanel();
   }
   if (typeof renderPublicProfile === "function" && state.publicProfile && !E("profileSection")?.hidden) renderPublicProfile();
+}
+
+function privacyBoolean(value, fallback = true) {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function renderProfilePrivacySettings() {
+  const user = state.currentUser;
+  const visibility = E("profileVisibilitySelect");
+  const showPrimary = E("showPrimaryResultToggle");
+  const showCompleted = E("showCompletedCountToggle");
+  const showFriends = E("showFriendsToggle");
+  if (!visibility || !showPrimary || !showCompleted || !showFriends || !user) return;
+
+  visibility.value = user.profileVisibility === "private" ? "private" : "public";
+  showPrimary.checked = privacyBoolean(user.showPrimaryResult);
+  showCompleted.checked = privacyBoolean(user.showCompletedCount);
+  showFriends.checked = privacyBoolean(user.showFriends);
+}
+
+async function submitProfilePrivacySettings() {
+  if (!state.currentUser) return;
+  const payload = {
+    profileVisibility: E("profileVisibilitySelect")?.value === "private" ? "private" : "public",
+    showPrimaryResult: Boolean(E("showPrimaryResultToggle")?.checked),
+    showCompletedCount: Boolean(E("showCompletedCountToggle")?.checked),
+    showFriends: Boolean(E("showFriendsToggle")?.checked),
+  };
+  const { response, data } = await updateMyProfile(payload);
+  if (!response.ok) {
+    showToast(data.error || profileLabel("privacySaveFailed", "Could not save privacy settings"), { title: authLabel("error", "Account error"), tone: "error" });
+    return;
+  }
+  state.currentUser = { ...state.currentUser, ...data };
+  renderAuthPanel();
+  if (state.publicProfileUsername && !E("profileSection")?.hidden && typeof openPublicProfile === "function") {
+    await openPublicProfile(state.publicProfileUsername, { updateHistory: false });
+  }
+  showToast(profileLabel("privacySaved", "Privacy settings updated"), { title: authLabel("done", "Done"), duration: 2200 });
 }
 
 function renderProfileResults() {
@@ -281,6 +330,9 @@ function wireAuthEvents() {
   E("copyPublicProfileBtn")?.addEventListener("click", () => {
     if (!state.currentUser?.username || typeof copyProfileLink !== "function") return;
     copyProfileLink(state.currentUser.username);
+  });
+  E("profilePrivacySaveBtn")?.addEventListener("click", () => {
+    submitProfilePrivacySettings().catch((error) => showToast(error.message, { title: authLabel("error", "Account error"), tone: "error" }));
   });
   E("profileRefreshBtn")?.addEventListener("click", () => loadProfileResults().catch((error) => showToast(error.message, { title: authLabel("error", "Account error"), tone: "error" })));
   E("authLogoutBtn")?.addEventListener("click", () => logoutUserAccount().catch((error) => showToast(error.message, { title: authLabel("error", "Account error"), tone: "error" })));

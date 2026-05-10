@@ -79,6 +79,34 @@
             <button type="button" class="account-link-btn" id="viewPublicProfileBtn">View public profile</button>
             <button type="button" class="account-link-btn" id="copyPublicProfileBtn">Copy profile link</button>
           </div>
+          <section class="profile-privacy" aria-labelledby="profilePrivacyTitle">
+            <div class="profile-privacy__head">
+              <div>
+                <div class="profile-results__eyebrow" id="profilePrivacyEyebrow">Privacy</div>
+                <h3 id="profilePrivacyTitle">Profile privacy</h3>
+              </div>
+              <button type="button" class="profile-results__refresh" id="profilePrivacySaveBtn">Save</button>
+            </div>
+            <label class="profile-privacy__field" for="profileVisibilitySelect">
+              <span id="profileVisibilityLabel">Profile visibility</span>
+              <select id="profileVisibilitySelect">
+                <option value="public" id="profileVisibilityPublicOption">Public</option>
+                <option value="private" id="profileVisibilityPrivateOption">Private</option>
+              </select>
+            </label>
+            <label class="profile-privacy__toggle" for="showPrimaryResultToggle">
+              <input type="checkbox" id="showPrimaryResultToggle" />
+              <span id="showPrimaryResultLabel">Show primary MBTI</span>
+            </label>
+            <label class="profile-privacy__toggle" for="showCompletedCountToggle">
+              <input type="checkbox" id="showCompletedCountToggle" />
+              <span id="showCompletedCountLabel">Show completed tests count</span>
+            </label>
+            <label class="profile-privacy__toggle" for="showFriendsToggle">
+              <input type="checkbox" id="showFriendsToggle" />
+              <span id="showFriendsLabel">Show friends list</span>
+            </label>
+          </section>
           <section class="profile-results" aria-labelledby="profileResultsTitle">
             <div class="profile-results__head">
               <div>

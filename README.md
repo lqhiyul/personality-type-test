@@ -40,7 +40,7 @@ When those files exist, replace this note with a short screenshot gallery.
 - In-memory login rate limiting for repeated failed admin login attempts by IP address.
 - Email/password user registration and login with bcrypt password hashing and an HttpOnly session cookie.
 - Private My Account result history for logged-in users, including primary result selection and deleting own saved results.
-- Public username profiles with editable display name, short bio, avatar preset, and optional primary MBTI result.
+- Public username profiles with editable display name, short bio, avatar preset, optional primary MBTI result, optional completed-test count, optional public friends list, and public/private visibility.
 - Simple friends system with incoming friend requests, accepting requests, removing friends, and compatibility scores based on both users' primary MBTI results.
 - Local JSON persistence with safer temp-file writes and rename.
 - SQLite user storage for accounts and logged-in saved test results.
@@ -126,9 +126,9 @@ Regular users can register and log in with username, email, and password. Passwo
 
 When a logged-in user completes the quiz, the app keeps the existing anonymous JSON save and also stores a private copy in SQLite. The Account panel shows the current user's saved result history, latest result, optional primary type, and actions to mark a result as primary or delete one of their own results.
 
-Users can also open a public profile at `/?profile=username`. Public profiles show only safe public data: username, display name, bio, avatar preset, completed test count, and the selected primary MBTI type if one exists. Email, password hashes, private answers, and full saved result history are not public.
+Users can also open a public profile at `/?profile=username`. Public profiles show only safe public data: username, display name, avatar preset, and the public fields the owner has enabled. A user can make the profile private, hide the primary MBTI result, hide the completed test count, and hide the public friends list. Email, password hashes, private answers, and full saved result history are not public.
 
-Logged-in users can send friend requests from another user's public profile. Incoming requests appear in My Account, where the target user can accept them. Accepted friends are shown in both users' friends lists. If both users have selected a primary MBTI result, the friends list shows friendship, relationship, and work compatibility scores. If either user has no primary result, the UI shows compatibility as unavailable.
+Logged-in users can send friend requests from another user's public profile. Incoming requests appear in My Account, where the target user can accept them. Accepted friends are shown in both users' private friends lists. Public profiles can show a compact public friends preview only when the profile owner enables it. If both users have selected a primary MBTI result, the private friends list shows friendship, relationship, and work compatibility scores. If either user has no primary result, the UI shows compatibility as unavailable.
 
 The regular user auth endpoints are separate from the admin endpoints:
 
@@ -138,18 +138,18 @@ The regular user auth endpoints are separate from the admin endpoints:
 | `POST` | `/api/auth/login` | Log in by email or username. |
 | `POST` | `/api/auth/logout` | Clear the regular user session. |
 | `GET` | `/api/auth/me` | Return the current logged-in user. |
-| `PATCH` | `/api/me/profile` | Update the current user's public display name, bio, and avatar preset. |
+| `PATCH` | `/api/me/profile` | Update the current user's public display name, bio, avatar preset, and privacy settings. |
 | `GET` | `/api/me/results` | List the current user's saved test results. |
 | `POST` | `/api/me/results/{id}/primary` | Mark one of the current user's saved results as primary. |
 | `DELETE` | `/api/me/results/{id}` | Delete one of the current user's saved results. |
-| `GET` | `/api/users/{username}` | Return a safe public profile by username. |
+| `GET` | `/api/users/{username}` | Return a safe public profile by username, respecting privacy settings. |
 | `POST` | `/api/friends/request` | Send a friend request to a username. |
 | `GET` | `/api/friends/requests` | List incoming pending friend requests. |
 | `POST` | `/api/friends/requests/{id}/accept` | Accept an incoming pending friend request. |
 | `GET` | `/api/friends` | List accepted friends with primary type and compatibility state. |
 | `DELETE` | `/api/friends/{id}` | Remove an accepted friendship that includes the current user. |
 
-The current anonymous quiz flow still saves submissions through the existing JSON `DATA_FILE` store, so the admin list, export, delete, clear, and stats tools continue to use the same behavior as before. Logged-in result history is private to the current user; the public profile shows only the selected primary type and aggregate count.
+The current anonymous quiz flow still saves submissions through the existing JSON `DATA_FILE` store, so the admin list, export, delete, clear, and stats tools continue to use the same behavior as before. Logged-in result history is private to the current user; public profiles show only fields enabled by the owner.
 
 Set `DATABASE_PATH` to move the SQLite file. If it is empty, the app falls back to `data/app.db`. The default `data/` directory is ignored by Git, so runtime database files should not be committed.
 
@@ -246,11 +246,11 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 | `POST` | `/api/auth/login` | Log in a regular user by email or username. |
 | `POST` | `/api/auth/logout` | Log out the regular user. |
 | `GET` | `/api/auth/me` | Return the current regular user. |
-| `PATCH` | `/api/me/profile` | Update the current user's public profile fields. |
+| `PATCH` | `/api/me/profile` | Update the current user's public profile fields and privacy settings: `profileVisibility`, `showPrimaryResult`, `showCompletedCount`, and `showFriends`. |
 | `GET` | `/api/me/results` | Return the current user's saved result history. |
 | `POST` | `/api/me/results/{id}/primary` | Set the current user's primary saved result. |
 | `DELETE` | `/api/me/results/{id}` | Delete one saved result owned by the current user. |
-| `GET` | `/api/users/{username}` | Return safe public profile data by username. |
+| `GET` | `/api/users/{username}` | Return safe public profile data by username, with private or hidden fields omitted. |
 | `POST` | `/api/friends/request` | Send a friend request to another user by username. |
 | `GET` | `/api/friends/requests` | Return incoming pending friend requests for the current user. |
 | `POST` | `/api/friends/requests/{id}/accept` | Accept an incoming friend request addressed to the current user. |
@@ -273,9 +273,11 @@ GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`
 - Regular user auth uses a separate `user_session` cookie from the admin session cookie.
 - Saved result history endpoints require a regular user session and scope every list, primary, and delete action by the current user ID.
 - Public profile responses never include email, password hashes, private answers, or full saved result history.
+- Private public profiles omit bio, primary MBTI, completed count, public friends list, and detailed profile data.
+- Profile owners can independently hide primary MBTI, completed test count, and the public friends list while keeping the profile itself public.
 - Friend endpoints require a regular user session, prevent self-requests and duplicate pairs, allow accepting only by the addressee, and allow removing only accepted friendships that include the current user.
 - Friend list and request responses expose only safe public account fields, primary MBTI type, and compatibility state.
-- Profile editing is limited to display name, bio, and a fixed allowlist of CSS avatar presets. There are no custom avatar uploads.
+- Profile editing is limited to display name, bio, a fixed allowlist of CSS avatar presets, and basic public-profile privacy settings. There are no custom avatar uploads.
 - Failed admin and regular user login attempts are rate-limited in memory per IP address.
 - Session cookies are `HttpOnly` and `SameSite=Lax`.
 - Set `COOKIE_SECURE=true` only when the app is served behind HTTPS.

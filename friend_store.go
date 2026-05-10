@@ -100,6 +100,10 @@ func (s *UserStore) ListIncomingFriendRequests(ctx context.Context, userID int64
 			COALESCE(u.display_name, ''),
 			COALESCE(u.bio, ''),
 			COALESCE(u.avatar_key, ''),
+			COALESCE(u.profile_visibility, 'public'),
+			COALESCE(u.show_primary_result, 1),
+			COALESCE(u.show_completed_count, 1),
+			COALESCE(u.show_friends, 1),
 			u.created_at,
 			u.updated_at,
 			COALESCE((
@@ -212,6 +216,10 @@ func (s *UserStore) ListFriends(ctx context.Context, userID int64) ([]FriendList
 			COALESCE(u.display_name, ''),
 			COALESCE(u.bio, ''),
 			COALESCE(u.avatar_key, ''),
+			COALESCE(u.profile_visibility, 'public'),
+			COALESCE(u.show_primary_result, 1),
+			COALESCE(u.show_completed_count, 1),
+			COALESCE(u.show_friends, 1),
 			u.created_at,
 			u.updated_at,
 			COALESCE((
@@ -307,6 +315,9 @@ func scanFriendshipUserWithPrimary(row rowScanner) (Friendship, User, string, er
 	var friendshipUpdatedAt string
 	var createdAt string
 	var updatedAt string
+	var showPrimaryResult int
+	var showCompletedCount int
+	var showFriends int
 	if err := row.Scan(
 		&friendship.ID,
 		&friendship.RequesterID,
@@ -320,6 +331,10 @@ func scanFriendshipUserWithPrimary(row rowScanner) (Friendship, User, string, er
 		&user.DisplayName,
 		&user.Bio,
 		&user.AvatarKey,
+		&user.ProfileVisibility,
+		&showPrimaryResult,
+		&showCompletedCount,
+		&showFriends,
 		&createdAt,
 		&updatedAt,
 		&primaryType,
@@ -344,6 +359,10 @@ func scanFriendshipUserWithPrimary(row rowScanner) (Friendship, User, string, er
 	if err != nil {
 		return Friendship{}, User{}, "", err
 	}
+	user.ProfileVisibility = normalizedProfileVisibilityOrDefault(user.ProfileVisibility)
+	user.ShowPrimaryResult = showPrimaryResult != 0
+	user.ShowCompletedCount = showCompletedCount != 0
+	user.ShowFriends = showFriends != 0
 	return friendship, user, primaryType, nil
 }
 

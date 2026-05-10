@@ -84,6 +84,10 @@ func RunMigrations(ctx context.Context, db *sql.DB) error {
 			display_name TEXT,
 			bio TEXT,
 			avatar_key TEXT,
+			profile_visibility TEXT NOT NULL DEFAULT 'public',
+			show_primary_result INTEGER NOT NULL DEFAULT 1,
+			show_completed_count INTEGER NOT NULL DEFAULT 1,
+			show_friends INTEGER NOT NULL DEFAULT 1,
 			created_at TEXT NOT NULL,
 			updated_at TEXT NOT NULL
 		)`,
@@ -125,6 +129,54 @@ func RunMigrations(ctx context.Context, db *sql.DB) error {
 	for _, statement := range statements {
 		if _, err := db.ExecContext(ctx, statement); err != nil {
 			return fmt.Errorf("run sqlite migration: %w", err)
+		}
+	}
+	if err := ensureUserPrivacyColumns(ctx, db); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ensureUserPrivacyColumns(ctx context.Context, db *sql.DB) error {
+	rows, err := db.QueryContext(ctx, `PRAGMA table_info(users)`)
+	if err != nil {
+		return fmt.Errorf("inspect users columns: %w", err)
+	}
+	defer rows.Close()
+
+	existing := map[string]struct{}{}
+	for rows.Next() {
+		var cid int
+		var name string
+		var columnType string
+		var notNull int
+		var defaultValue sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &pk); err != nil {
+			return fmt.Errorf("scan users column: %w", err)
+		}
+		existing[name] = struct{}{}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("inspect users columns rows: %w", err)
+	}
+
+	columns := []struct {
+		name       string
+		definition string
+	}{
+		{name: "profile_visibility", definition: "TEXT NOT NULL DEFAULT 'public'"},
+		{name: "show_primary_result", definition: "INTEGER NOT NULL DEFAULT 1"},
+		{name: "show_completed_count", definition: "INTEGER NOT NULL DEFAULT 1"},
+		{name: "show_friends", definition: "INTEGER NOT NULL DEFAULT 1"},
+	}
+	for _, column := range columns {
+		if _, ok := existing[column.name]; ok {
+			continue
+		}
+		statement := fmt.Sprintf("ALTER TABLE users ADD COLUMN %s %s", column.name, column.definition)
+		if _, err := db.ExecContext(ctx, statement); err != nil {
+			return fmt.Errorf("add users.%s column: %w", column.name, err)
 		}
 	}
 	return nil
