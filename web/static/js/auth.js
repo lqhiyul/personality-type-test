@@ -35,6 +35,7 @@ function setAuthMode(mode) {
 function applyAuthStaticText() {
   setText("accountPanelEyebrow", authLabel("eyebrow", "Account"));
   setText("accountPanelTitle", authLabel("title", "My account"));
+  E("accountBackBtn")?.setAttribute("aria-label", authLabel("back", "Back to main screen"));
   E("accountCloseBtn")?.setAttribute("aria-label", authLabel("close", "Close account panel"));
   setText("authLoginModeBtn", authLabel("login", "Log in"));
   setText("authRegisterModeBtn", authLabel("register", "Register"));
@@ -265,6 +266,10 @@ async function removeProfileResult(id) {
 
 function wireAuthEvents() {
   E("accountBtn")?.addEventListener("click", () => setAuthPanelOpen(!state.authPanelOpen));
+  E("accountBackBtn")?.addEventListener("click", () => {
+    setAuthPanelOpen(false);
+    E("accountBtn")?.focus({ preventScroll: true });
+  });
   E("accountCloseBtn")?.addEventListener("click", () => setAuthPanelOpen(false));
   E("authLoginModeBtn")?.addEventListener("click", () => setAuthMode("login"));
   E("authRegisterModeBtn")?.addEventListener("click", () => setAuthMode("register"));

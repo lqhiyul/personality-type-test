@@ -22,25 +22,31 @@ function setCompatibilityState(patch = {}) {
   next.typeA = TYPE_GRID_ORDER.includes(next.typeA) ? next.typeA : "";
   next.typeB = TYPE_GRID_ORDER.includes(next.typeB) ? next.typeB : "";
   next.context = compatibilityContexts().includes(next.context) ? next.context : "friendship";
+  next.checked = Boolean(next.checked);
+  next.validation = Boolean(next.validation);
   state.compatibility = next;
 }
 
 function buildCompatibilityResult() {
+  const result = analyzeCompatibilityForContext(state.compatibility.context);
+  state.compatibility.result = result;
+  return result;
+}
+
+function analyzeCompatibilityForContext(context) {
   const engine = compatibilityEngine();
   const typeA = getTypeData(state.compatibility.typeA);
   const typeB = getTypeData(state.compatibility.typeB);
   if (!engine || !typeA || !typeB) {
-    state.compatibility.result = null;
     return null;
   }
-  state.compatibility.result = engine.analyze({
+  return engine.analyze({
     typeA,
     typeB,
-    context: state.compatibility.context,
+    context,
     lang: state.lang,
     url: shareUrl(),
   });
-  return state.compatibility.result;
 }
 
 function renderCompatibilityContextButtons() {
@@ -70,9 +76,12 @@ function renderCompatibilityScales(scales) {
 
 function renderCompatibilityResult(result) {
   if (!result) {
+    const validation = state.compatibility.validation;
+    const emptyTitle = t("ui.compatibility.emptyTitle", "Start with two types");
+    const validationCopy = `${t("ui.compatibility.firstType", "First type")} + ${t("ui.compatibility.secondType", "Second type")}: ${t("ui.compatibility.selectPlaceholder", "Choose type")}.`;
     return `<section class="compatibility-empty">
-      <h3>${esc(t("ui.compatibility.emptyTitle", "Start with two types"))}</h3>
-      <p>${esc(t("ui.compatibility.emptyCopy", "Choose two types and a context to see interaction dynamics."))}</p>
+      <h3>${esc(emptyTitle)}</h3>
+      <p>${esc(validation ? validationCopy : t("ui.compatibility.emptyCopy", "Choose two types and a context to see interaction dynamics."))}</p>
     </section>`;
   }
   return `<section class="compatibility-result" aria-label="${esc(t("ui.compatibility.resultLabel", "Comparison result"))}">
@@ -91,7 +100,7 @@ function renderCompatibilityResult(result) {
       ${renderCompatibilityScales(result.scales)}
     </div>
     <div class="compatibility-actions">
-      <button type="button" class="result-type-btn result-type-btn--share" data-copy-compatibility>${esc(t("ui.compatibility.copy", "Copy result"))}</button>
+      <button type="button" class="result-type-btn result-type-btn--share" data-copy-compatibility="${esc(result.context)}">${esc(t("ui.compatibility.copy", "Copy result"))}</button>
     </div>
   </section>`;
 }
@@ -100,7 +109,9 @@ function renderCompatibility() {
   const section = E("compatibilitySection");
   if (!section) return;
   setCompatibilityState();
-  const result = state.compatibility.typeA && state.compatibility.typeB ? buildCompatibilityResult() : null;
+  const shouldShowResult = state.compatibility.checked && state.compatibility.typeA && state.compatibility.typeB;
+  const result = shouldShowResult ? buildCompatibilityResult() : null;
+  if (!shouldShowResult) state.compatibility.result = null;
   section.innerHTML = `
     <div class="compatibility-layout">
       <section class="card compatibility-tools" aria-label="${esc(t("ui.compatibility.toolsLabel", "Comparison"))}">
@@ -132,20 +143,21 @@ function renderCompatibility() {
 function runCompatibilityFromControls(options = {}) {
   const typeA = E("compatTypeA")?.value || "";
   const typeB = E("compatTypeB")?.value || "";
-  setCompatibilityState({ typeA, typeB });
+  const canCheck = Boolean(typeA && typeB);
+  setCompatibilityState({ typeA, typeB, context: "friendship", checked: canCheck, validation: !canCheck, result: null });
   renderCompatibility();
-  if (options.updateHistory !== false && !E("compatibilitySection")?.hidden) updateRoute("compatibility");
+  if (options.updateHistory !== false && !E("compatibilitySection")?.hidden) updateRoute("compatibility", "", !canCheck);
 }
 
 function openCompatibilityWithType(typeCode, options = {}) {
-  setCompatibilityState({ typeA: TYPE_GRID_ORDER.includes(typeCode) ? typeCode : state.compatibility.typeA });
+  setCompatibilityState({ typeA: TYPE_GRID_ORDER.includes(typeCode) ? typeCode : state.compatibility.typeA, checked: false, validation: false, result: null });
   setTab("compatibility", { updateHistory: options.updateHistory !== false });
   renderCompatibility();
   setTimeout(() => E("compatTypeB")?.focus({ preventScroll: true }), 0);
 }
 
-function copyCompatibilityResult() {
-  const result = buildCompatibilityResult();
+function copyCompatibilityResult(context = state.compatibility.context) {
+  const result = analyzeCompatibilityForContext(context);
   if (!result?.copyText) return;
   if (!navigator.clipboard?.writeText) {
     showToast(result.copyText, { title: t("ui.compatibility.copy", "Copy result"), duration: 5200 });

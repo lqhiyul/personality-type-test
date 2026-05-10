@@ -69,6 +69,8 @@ const state = {
     typeA: "",
     typeB: "",
     context: "friendship",
+    checked: false,
+    validation: false,
     result: null,
   },
 };

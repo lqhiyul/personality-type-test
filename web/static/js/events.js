@@ -69,13 +69,15 @@ function wireEvents() {
   document.addEventListener("change", (event) => {
     const target = event.target instanceof HTMLSelectElement ? event.target : null;
     if (target?.id === "compatTypeA") {
-      setCompatibilityState({ typeA: target.value });
-      runCompatibilityFromControls({ updateHistory: false });
+      setCompatibilityState({ typeA: target.value, context: "friendship", checked: false, validation: false, result: null });
+      renderCompatibility();
+      if (!E("compatibilitySection")?.hidden) updateRoute("compatibility", "", true);
       return;
     }
     if (target?.id === "compatTypeB") {
-      setCompatibilityState({ typeB: target.value });
-      runCompatibilityFromControls({ updateHistory: false });
+      setCompatibilityState({ typeB: target.value, context: "friendship", checked: false, validation: false, result: null });
+      renderCompatibility();
+      if (!E("compatibilitySection")?.hidden) updateRoute("compatibility", "", true);
     }
   });
 
@@ -107,17 +109,18 @@ function wireEvents() {
     }
     const contextButton = target?.closest("[data-compat-context]");
     if (contextButton?.dataset.compatContext) {
-      setCompatibilityState({ context: contextButton.dataset.compatContext });
+      setCompatibilityState({ context: contextButton.dataset.compatContext, validation: false });
       renderCompatibility();
-      if (!E("compatibilitySection")?.hidden) updateRoute("compatibility");
+      if (!E("compatibilitySection")?.hidden) updateRoute("compatibility", "", true);
       return;
     }
     if (target?.closest("[data-run-compatibility]")) {
       runCompatibilityFromControls();
       return;
     }
-    if (target?.closest("[data-copy-compatibility]")) {
-      copyCompatibilityResult();
+    const copyCompatibility = target?.closest("[data-copy-compatibility]");
+    if (copyCompatibility) {
+      copyCompatibilityResult(copyCompatibility.dataset.copyCompatibility || state.compatibility.context);
       return;
     }
     if (target?.closest("[data-back-types]")) {

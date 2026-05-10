@@ -1556,11 +1556,15 @@ a:focus-visible{
 }
 
 .account-popover__head{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:14px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:start;
+  gap:10px;
   margin-bottom:14px;
+}
+
+.account-popover__head > div{
+  min-width:0;
 }
 
 .account-popover__eyebrow{
@@ -1576,8 +1580,12 @@ a:focus-visible{
   margin:0;
   font-size:18px;
   line-height:1.25;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 
+.account-popover__back,
 .account-popover__close{
   appearance:none;
   width:34px;
@@ -1590,6 +1598,23 @@ a:focus-visible{
   font-size:22px;
   line-height:1;
   cursor:pointer;
+}
+
+.account-popover__back{
+  border-color:rgba(255,255,255,.06);
+  background:transparent;
+  color:rgba(232,236,255,.62);
+  font-size:17px;
+}
+
+.account-popover__back:hover,
+.account-popover__back:focus-visible,
+.account-popover__close:hover,
+.account-popover__close:focus-visible{
+  border-color:rgba(244,238,223,.22);
+  background:rgba(244,238,223,.08);
+  color:#fff8e8;
+  outline:none;
 }
 
 .auth-mode-toggle{
@@ -1650,6 +1675,7 @@ a:focus-visible{
 .account-signed-in{
   display:grid;
   gap:14px;
+  min-width:0;
 }
 
 .account-summary{
@@ -1702,11 +1728,17 @@ a:focus-visible{
   display:flex;
   align-items:center;
   justify-content:space-between;
+  flex-wrap:wrap;
   gap:12px;
   padding:12px;
   border:1px solid rgba(255,255,255,.07);
   border-radius:16px;
   background:rgba(255,255,255,.03);
+}
+
+.profile-results__head > div,
+.profile-friends__head > div{
+  min-width:0;
 }
 
 .profile-results__eyebrow{
@@ -1720,6 +1752,10 @@ a:focus-visible{
 
 .profile-results__head strong{
   display:block;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
   color:#fff8e8;
   font-size:15px;
   line-height:1.3;
@@ -1888,6 +1924,7 @@ a:focus-visible{
   display:flex;
   align-items:center;
   justify-content:space-between;
+  flex-wrap:wrap;
   gap:12px;
   padding:12px;
   border:1px solid rgba(255,255,255,.07);
@@ -2330,14 +2367,90 @@ a:focus-visible{
 }
 
 @media (max-width:520px){
+  .account-popover{
+    position:fixed;
+    top:62px;
+    left:12px;
+    right:auto;
+    width:min(360px, calc(100vw - 24px));
+    max-height:calc(100vh - 82px);
+    max-height:calc(100dvh - 82px);
+    padding:14px;
+    border-radius:18px;
+  }
+
+  .account-popover__head{
+    gap:8px;
+  }
+
+  .account-popover__back,
+  .account-popover__close{
+    width:32px;
+    height:32px;
+    border-radius:11px;
+  }
+
+  .account-summary{
+    align-items:start;
+  }
+
+  .account-summary strong,
+  .account-summary span{
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+
   .account-profile-links,
   .avatar-choice-grid{
     grid-template-columns:1fr;
   }
 
+  .account-link-btn,
+  .profile-results__refresh{
+    width:100%;
+  }
+
+  .profile-results__head,
   .profile-friends__head{
+    display:grid;
     align-items:flex-start;
-    flex-direction:column;
+    grid-template-columns:1fr;
+  }
+
+  .profile-results__head strong{
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+
+  .profile-result__main{
+    grid-template-columns:1fr;
+    align-items:start;
+  }
+
+  .profile-result__type{
+    justify-self:start;
+  }
+
+  .profile-result__main strong,
+  .profile-result__main span,
+  .profile-friend-card__identity strong,
+  .profile-friend-card__identity span,
+  .profile-friend-card__meta{
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+
+  .profile-result__actions,
+  .profile-friend-card__actions{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
+  .profile-result__btn,
+  .profile-result__badge{
+    width:100%;
+    justify-content:center;
+    text-align:center;
   }
 
   .profile-friend-compat{
@@ -4092,25 +4205,49 @@ summary,
   }
 
   .top-nav{
-    padding-top:52px;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:
+      "account language"
+      "tabs tabs";
+    align-items:center;
+    justify-items:stretch;
+    gap:22px 12px;
+    min-height:0;
+    padding-top:0;
+  }
+
+  .top-nav .tabs-nav{
+    grid-area:tabs;
+    width:100%;
+    justify-content:center;
+    margin:0;
+    padding-inline:0;
   }
 
   .account-btn{
-    top:12px;
-    left:12px;
-    max-width:calc(100vw - 164px);
+    position:relative;
+    top:auto;
+    left:auto;
+    grid-area:account;
+    justify-self:start;
+    max-width:min(180px, calc(100vw - 190px));
   }
 
   .account-popover{
-    top:58px;
-    left:12px;
-    width:min(360px, calc(100vw - 24px));
+    position:absolute;
+    top:calc(100% + 10px);
+    left:0;
+    width:min(360px, calc(100vw - 36px));
   }
 
   .language-switcher{
-    top:12px;
-    right:12px;
+    position:relative;
+    top:auto;
+    right:auto;
     bottom:auto;
+    grid-area:language;
+    justify-self:end;
     gap:4px;
     padding:5px;
     opacity:.94;

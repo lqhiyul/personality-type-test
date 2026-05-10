@@ -135,6 +135,7 @@ function updateRoute(tab, typeCode = "", replace = false) {
     if (state.compatibility.typeA) params.set("typeA", state.compatibility.typeA);
     if (state.compatibility.typeB) params.set("typeB", state.compatibility.typeB);
     if (state.compatibility.context !== "friendship") params.set("context", state.compatibility.context);
+    if (state.compatibility.checked && state.compatibility.typeA && state.compatibility.typeB) params.set("checked", "1");
   }
   if (typeCode) params.set("type", typeCode);
   const next = params.toString() ? `${location.pathname}?${params}` : location.pathname;
@@ -185,6 +186,9 @@ function applyRoute(options = {}) {
       typeA: params.get("typeA")?.toUpperCase() || "",
       typeB: params.get("typeB")?.toUpperCase() || "",
       context: params.get("context") || "friendship",
+      checked: params.get("checked") === "1",
+      validation: false,
+      result: null,
     });
     setTab("compatibility", { updateHistory: false });
     if (options.replace) updateRoute("compatibility", "", true);

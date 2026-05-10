@@ -220,7 +220,8 @@
   };
 
   const curatedPairBoosts = {
-    "ENFJ|INTJ": { friendship: 9, relationship: 20, work: 8 },
+    "ENFJ|INTJ": { friendship: 3, relationship: 13, work: -3 },
+    "INFJ|INTJ": { friendship: 7, relationship: 16, work: 3 },
   };
 
   const curatedPairCopy = {
