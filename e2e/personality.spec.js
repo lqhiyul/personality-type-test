@@ -31,6 +31,62 @@ test("types and compatibility sections work", async ({ page }) => {
   await expect(page.locator(".compatibility-result")).toBeVisible();
 });
 
+test("localized quiz, compatibility, and result text renders cleanly", async ({ page }) => {
+  const mojibake = /РЎ|Рџ|Рў|Рµ|СЊ|Сѓ|С‚|вЂ|Рґ|Рє|РЅ|Рѕ|�/;
+  const languages = [
+    {
+      code: "uk",
+      quizTitle: "Відповідайте на ситуації, а не на ярлики",
+      firstQuestion: "Коли після напруженого дня",
+      compatibilityTitle: "Сумісність типів",
+      compatibilitySection: "Що може працювати добре",
+      resultAction: "Поділитися результатом",
+    },
+    {
+      code: "ru",
+      quizTitle: "Отвечайте на ситуации, а не на ярлыки",
+      firstQuestion: "Когда после напряженного дня",
+      compatibilityTitle: "Совместимость типов",
+      compatibilitySection: "Что может работать хорошо",
+      resultAction: "Поделиться результатом",
+    },
+    {
+      code: "en",
+      quizTitle: "Answer situations, not labels",
+      firstQuestion: "After a demanding day",
+      compatibilityTitle: "Type Compatibility",
+      compatibilitySection: "What can work well",
+      resultAction: "Share result",
+    },
+  ];
+
+  await page.goto("/");
+  await page.locator("#personName").fill("Localization Check");
+  const count = await page.locator("[data-question]").count();
+  for (let index = 0; index < count; index += 1) {
+    await page.locator(`[data-question="${index}"] .option`).first().click();
+  }
+  await page.locator("#submitBtn").click();
+  await expect(page.locator("#resultBox")).toBeVisible();
+
+  for (const language of languages) {
+    await page.locator(`[data-lang="${language.code}"]`).click();
+    await page.locator("#tabQuiz").click();
+    await expect(page.locator("#quizTitle")).toHaveText(language.quizTitle);
+    await expect(page.locator('[data-question="0"]')).toContainText(language.firstQuestion);
+    await expect(page.locator("#resultBox")).toContainText(language.resultAction);
+    await expect(page.locator("#quizSection")).not.toContainText(mojibake);
+
+    await page.locator("#tabCompatibility").click();
+    await expect(page.locator("#compatibilityTitle")).toHaveText(language.compatibilityTitle);
+    await page.locator("#compatTypeA").selectOption("INTJ");
+    await page.locator("#compatTypeB").selectOption("ENFP");
+    await page.locator("[data-run-compatibility]").click();
+    await expect(page.locator(".compatibility-result")).toContainText(language.compatibilitySection);
+    await expect(page.locator("#compatibilitySection")).not.toContainText(mojibake);
+  }
+});
+
 test("user can register, view profile, and logout", async ({ page }) => {
   const suffix = Date.now();
   await page.goto("/");

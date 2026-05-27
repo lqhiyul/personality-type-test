@@ -34,6 +34,12 @@ func (a *App) handleStatic(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	switch path.Ext(r.URL.Path) {
+	case ".css":
+		w.Header().Set("Content-Type", "text/css; charset=utf-8")
+	case ".js":
+		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+	}
 	http.FileServer(http.FS(a.baseTemplateFS)).ServeHTTP(w, r)
 }
 

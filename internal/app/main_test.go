@@ -505,3 +505,26 @@ func TestStaticAssetsServed(t *testing.T) {
 		})
 	}
 }
+
+func TestStaticTextAssetsUseUTF8ContentTypes(t *testing.T) {
+	app := newTestApp(t)
+	targets := map[string]string{
+		"/":                  "text/html; charset=utf-8",
+		"/style.css":         "text/css; charset=utf-8",
+		"/content-author.js": "text/javascript; charset=utf-8",
+		"/js/app.js":         "text/javascript; charset=utf-8",
+	}
+
+	for target, want := range targets {
+		t.Run(target, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, target, nil))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("expected %s to return 200, got %d", target, rec.Code)
+			}
+			if got := rec.Header().Get("Content-Type"); got != want {
+				t.Fatalf("expected %s Content-Type %q, got %q", target, want, got)
+			}
+		})
+	}
+}
