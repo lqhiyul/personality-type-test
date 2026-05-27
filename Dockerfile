@@ -2,10 +2,11 @@ FROM golang:1.22-alpine AS build
 WORKDIR /app
 
 COPY go.mod ./
+COPY go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 go build -o /out/mbti-site .
+RUN CGO_ENABLED=0 go build -o /out/mbti-site ./cmd/server
 
 FROM alpine:3.20
 WORKDIR /app
@@ -15,6 +16,7 @@ RUN adduser -D -H -u 10001 appuser \
     && chown -R appuser:appuser /app
 
 COPY --from=build /out/mbti-site /usr/local/bin/mbti-site
+COPY --from=build /app/web/static ./web/static
 
 ENV HOST=0.0.0.0
 ENV PORT=8080

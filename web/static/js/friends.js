@@ -174,6 +174,7 @@ async function refreshVisiblePublicProfile() {
 
 function renderPublicProfileFriendActions(profile, ownProfile) {
   if (ownProfile) return "";
+  if (typeof profileInteractionBlocked === "function" && profileInteractionBlocked(profile)) return "";
   if (!state.currentUser) {
     return `<div class="public-profile-friend-state public-profile-friend-state--muted">${esc(friendsLabel("loginPrompt", "Log in to add friends."))}</div>`;
   }

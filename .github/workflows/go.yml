@@ -1,4 +1,4 @@
-name: Go
+name: CI
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,21 +26,46 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: npm
 
-      - name: Check formatting
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Check Go formatting
         run: test -z "$(gofmt -l .)"
 
       - name: JavaScript syntax
-        run: node scripts/js-check.mjs
+        run: npm run js-check
 
       - name: Vet
         run: go vet ./...
 
-      - name: Test
-        run: go test ./...
+      - name: Staticcheck
+        run: staticcheck ./...
+
+      - name: Test with coverage
+        run: go test ./... -coverprofile=coverage.out
 
       - name: Race test
         run: go test -race ./...
 
+      - name: Browser smoke tests
+        run: npm run e2e
+
       - name: Build
-        run: go build .
+        run: go build ./...
+
+      - name: Docker build
+        run: docker build -t personality-type-test .
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage
+          path: coverage.out

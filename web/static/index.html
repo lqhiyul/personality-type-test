@@ -79,19 +79,6 @@
             <button type="button" class="account-link-btn" id="viewPublicProfileBtn">View public profile</button>
             <button type="button" class="account-link-btn" id="copyPublicProfileBtn">Copy profile link</button>
           </div>
-          <section class="profile-messages" aria-labelledby="profileMessagesTitle">
-            <div class="profile-messages__head">
-              <div>
-                <div class="profile-results__eyebrow" id="profileMessagesEyebrow">Inbox</div>
-                <h3 id="profileMessagesTitle">Messages</h3>
-              </div>
-              <button type="button" class="profile-results__refresh" id="profileMessagesRefreshBtn">Refresh</button>
-            </div>
-            <div class="profile-messages__grid">
-              <div class="profile-messages__conversations" id="messageConversationsList"></div>
-              <div class="profile-messages__thread" id="messageThread"></div>
-            </div>
-          </section>
           <section class="profile-privacy" aria-labelledby="profilePrivacyTitle">
             <div class="profile-privacy__head">
               <div>
@@ -148,6 +135,29 @@
               <h4 id="profileFriendListTitle">Friends list</h4>
               <div class="profile-friends__list" id="friendsList"></div>
             </div>
+          </section>
+          <section class="profile-messages" aria-labelledby="profileMessagesTitle">
+            <div class="profile-friends__head">
+              <div>
+                <div class="profile-results__eyebrow" id="profileMessagesEyebrow">Messages</div>
+                <h3 id="profileMessagesTitle">Inbox</h3>
+              </div>
+              <button type="button" class="profile-results__refresh" id="profileMessagesRefreshBtn">Refresh</button>
+            </div>
+            <div class="messages-layout">
+              <div class="messages-conversation-list" id="messagesConversationList"></div>
+              <div class="messages-thread" id="messagesThread"></div>
+            </div>
+          </section>
+          <section class="profile-blocks" aria-labelledby="profileBlocksTitle">
+            <div class="profile-friends__head">
+              <div>
+                <div class="profile-results__eyebrow" id="profileBlocksEyebrow">Safety</div>
+                <h3 id="profileBlocksTitle">Blocked users</h3>
+              </div>
+              <button type="button" class="profile-results__refresh" id="profileBlocksRefreshBtn">Refresh</button>
+            </div>
+            <div class="profile-friends__list" id="blockedUsersList"></div>
           </section>
           <button type="button" class="btn ghost" id="authLogoutBtn">Log out</button>
         </div>
@@ -291,6 +301,23 @@
 
           <div id="adminState" class="admin-state" role="status" aria-live="polite" hidden></div>
 
+          <section class="admin-reports" aria-labelledby="adminReportsTitle">
+            <div class="admin-reports__head">
+              <h3 id="adminReportsTitle">Reports</h3>
+              <div class="admin-reports__controls">
+                <label id="adminReportsStatusLabel" for="adminReportsStatusFilter">Status</label>
+                <select id="adminReportsStatusFilter">
+                  <option value="open">Open</option>
+                  <option value="reviewed">Reviewed</option>
+                  <option value="dismissed">Dismissed</option>
+                  <option value="">All</option>
+                </select>
+                <button type="button" class="btn ghost btn-compact" id="adminReportsRefreshBtn">Refresh</button>
+              </div>
+            </div>
+            <div class="admin-reports__list" id="adminReportsList"></div>
+          </section>
+
           <div class="actions admin-actions">
             <button type="button" class="btn danger btn-compact" id="clearBtn">Очистити все</button>
           </div>
@@ -341,6 +368,7 @@
   <script src="js/auth.js"></script>
   <script src="js/profile.js"></script>
   <script src="js/friends.js"></script>
+  <script src="js/safety.js"></script>
   <script src="js/messages.js"></script>
   <script src="js/share.js"></script>
   <script src="js/events.js"></script>

@@ -15,14 +15,55 @@ const API = {
   friends: "/api/friends",
   friendRequest: "/api/friends/request",
   friendRequests: "/api/friends/requests",
+  blocks: "/api/blocks",
+  reports: "/api/reports",
+  adminReports: "/api/admin/reports",
   messagesStart: "/api/messages/start",
-  messageConversations: "/api/messages/conversations",
+  messagesConversations: "/api/messages/conversations",
   messages: "/api/messages",
 };
 
+const CSRF_COOKIE_NAME = "csrf_token";
+const CSRF_HEADER_NAME = "X-CSRF-Token";
+
+function readCookie(name) {
+  const prefix = `${name}=`;
+  return document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(prefix))
+    ?.slice(prefix.length) || "";
+}
+
+function unsafeMethod(method = "GET") {
+  return !["GET", "HEAD", "OPTIONS", "TRACE"].includes(String(method).toUpperCase());
+}
+
+async function ensureCSRFToken() {
+  let token = readCookie(CSRF_COOKIE_NAME);
+  if (token) return token;
+  await fetch("/healthz", { cache: "no-store", credentials: "same-origin" });
+  return readCookie(CSRF_COOKIE_NAME);
+}
+
+async function request(url, options = {}) {
+  const method = options.method || "GET";
+  const headers = { ...(options.headers || {}) };
+  if (unsafeMethod(method)) {
+    const token = await ensureCSRFToken();
+    if (token) headers[CSRF_HEADER_NAME] = token;
+  }
+  return fetch(url, {
+    ...options,
+    method,
+    credentials: "same-origin",
+    headers,
+  });
+}
+
 async function requestJSON(url, options = {}) {
   const { body, headers, ...rest } = options;
-  const response = await fetch(url, {
+  const response = await request(url, {
     ...rest,
     headers: { "Content-Type": "application/json", ...(headers || {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -43,23 +84,23 @@ function loginWithPassword(password) {
 }
 
 function logoutRequest() {
-  return fetch(API.logout, { method: "POST" });
+  return request(API.logout, { method: "POST" });
 }
 
 function fetchAdminResults() {
-  return fetch(API.results);
+  return request(API.results);
 }
 
 function deleteAllResults() {
-  return fetch(API.results, { method: "DELETE" });
+  return request(API.results, { method: "DELETE" });
 }
 
 function deleteStoredResult(id) {
-  return fetch(`${API.results}/${encodeURIComponent(id)}`, { method: "DELETE" });
+  return request(`${API.results}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 function fetchResultsExport(format = "csv") {
-  return fetch(format === "json" ? `${API.export}?format=json` : API.export);
+  return request(format === "json" ? `${API.export}?format=json` : API.export);
 }
 
 function registerAccount(payload) {
@@ -71,15 +112,15 @@ function loginAccount(payload) {
 }
 
 function logoutAccount() {
-  return fetch(API.authLogout, { method: "POST" });
+  return request(API.authLogout, { method: "POST" });
 }
 
 function fetchCurrentAccount() {
-  return fetch(API.authMe);
+  return request(API.authMe);
 }
 
 function fetchMyResults() {
-  return fetch(API.myResults);
+  return request(API.myResults);
 }
 
 function setPrimaryMyResult(id) {
@@ -87,15 +128,15 @@ function setPrimaryMyResult(id) {
 }
 
 function deleteMyResult(id) {
-  return fetch(`${API.myResults}/${encodeURIComponent(id)}`, { method: "DELETE" });
+  return request(`${API.myResults}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 function fetchPublicProfile(username) {
-  return fetch(`${API.users}/${encodeURIComponent(username)}`);
+  return request(`${API.users}/${encodeURIComponent(username)}`);
 }
 
 function fetchPublicProfileComments(username) {
-  return fetch(`${API.users}/${encodeURIComponent(username)}/comments`);
+  return request(`${API.users}/${encodeURIComponent(username)}/comments`);
 }
 
 function postPublicProfileComment(username, body) {
@@ -103,7 +144,7 @@ function postPublicProfileComment(username, body) {
 }
 
 function deletePublicProfileComment(id) {
-  return fetch(`${API.profileComments}/${encodeURIComponent(id)}`, { method: "DELETE" });
+  return request(`${API.profileComments}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 function updateMyProfile(payload) {
@@ -115,11 +156,11 @@ function sendFriendRequest(username) {
 }
 
 function fetchFriends() {
-  return fetch(API.friends);
+  return request(API.friends);
 }
 
 function fetchFriendRequests() {
-  return fetch(API.friendRequests);
+  return request(API.friendRequests);
 }
 
 function acceptFriendRequest(id) {
@@ -127,7 +168,32 @@ function acceptFriendRequest(id) {
 }
 
 function deleteFriendship(id) {
-  return fetch(`${API.friends}/${encodeURIComponent(id)}`, { method: "DELETE" });
+  return request(`${API.friends}/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+function fetchBlocks() {
+  return request(API.blocks);
+}
+
+function blockUser(username) {
+  return requestJSON(API.blocks, { method: "POST", body: { username } });
+}
+
+function unblockUser(username) {
+  return request(`${API.blocks}/${encodeURIComponent(username)}`, { method: "DELETE" });
+}
+
+function createReport(payload) {
+  return requestJSON(API.reports, { method: "POST", body: payload });
+}
+
+function fetchAdminReports(status = "") {
+  const suffix = status ? `?status=${encodeURIComponent(status)}` : "";
+  return request(`${API.adminReports}${suffix}`);
+}
+
+function updateAdminReportStatus(id, status) {
+  return requestJSON(`${API.adminReports}/${encodeURIComponent(id)}/status`, { method: "POST", body: { status } });
 }
 
 function startMessageConversation(username) {
@@ -135,17 +201,17 @@ function startMessageConversation(username) {
 }
 
 function fetchMessageConversations() {
-  return fetch(API.messageConversations);
+  return request(API.messagesConversations);
 }
 
 function fetchMessageConversation(id) {
-  return fetch(`${API.messageConversations}/${encodeURIComponent(id)}`);
+  return request(`${API.messagesConversations}/${encodeURIComponent(id)}`);
 }
 
 function sendConversationMessage(id, body) {
-  return requestJSON(`${API.messageConversations}/${encodeURIComponent(id)}`, { method: "POST", body: { body } });
+  return requestJSON(`${API.messagesConversations}/${encodeURIComponent(id)}`, { method: "POST", body: { body } });
 }
 
 function deleteConversationMessage(id) {
-  return fetch(`${API.messages}/${encodeURIComponent(id)}`, { method: "DELETE" });
+  return request(`${API.messages}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }

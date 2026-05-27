@@ -1,114 +1,124 @@
-const maxMessageBodyLength = 1000;
-
 function messagesLabel(key, fallback, params = {}) {
   return t(`ui.messages.${key}`, fallback, params);
 }
 
 function resetMessagesState() {
-  state.messageConversations = [];
-  state.selectedMessageConversationID = null;
-  state.selectedMessageConversation = null;
-  state.selectedMessageMessages = [];
-  state.messageConversationsLoading = false;
-  state.selectedMessageLoading = false;
-  state.messageSending = false;
+  state.messagesConversations = [];
+  state.messagesConversation = null;
+  state.messages = [];
+  state.messagesLoading = false;
+  state.messagesSending = false;
+  state.selectedConversationId = "";
   renderMessagesPanel();
 }
 
 function applyMessagesStaticText() {
-  setText("profileMessagesEyebrow", messagesLabel("eyebrow", "Inbox"));
-  setText("profileMessagesTitle", messagesLabel("title", "Messages"));
+  setText("profileMessagesEyebrow", messagesLabel("eyebrow", "Messages"));
+  setText("profileMessagesTitle", messagesLabel("title", "Inbox"));
   setText("profileMessagesRefreshBtn", messagesLabel("refresh", "Refresh"));
   renderMessagesPanel();
 }
 
+function messageParticipants(conversation) {
+  return Array.isArray(conversation?.participants) ? conversation.participants : [];
+}
+
 function otherMessageParticipants(conversation) {
-  const participants = Array.isArray(conversation?.participants) ? conversation.participants : [];
-  const currentID = state.currentUser?.id;
-  return participants.filter((participant) => String(participant.id) !== String(currentID));
+  const currentID = Number(state.currentUser?.id);
+  return messageParticipants(conversation).filter((participant) => Number(participant.id) !== currentID);
 }
 
 function conversationTitle(conversation) {
   const others = otherMessageParticipants(conversation);
-  const visible = others.length ? others : (Array.isArray(conversation?.participants) ? conversation.participants : []);
-  return visible.map((participant) => participant.displayName || participant.username).filter(Boolean).join(", ") || messagesLabel("unknownUser", "User");
+  const visible = others.length ? others : messageParticipants(conversation);
+  return visible.map((participant) => participant.displayName || participant.username).filter(Boolean).join(", ") || messagesLabel("unknown", "User");
+}
+
+function messageSenderName(conversation, senderID) {
+  if (Number(senderID) === Number(state.currentUser?.id)) return messagesLabel("you", "You");
+  const sender = messageParticipants(conversation).find((participant) => Number(participant.id) === Number(senderID));
+  return sender?.displayName || sender?.username || messagesLabel("unknown", "User");
 }
 
 function renderMessagesPanel() {
-  const list = E("messageConversationsList");
-  const thread = E("messageThread");
-  if (!list || !thread) return;
+  const conversationsEl = E("messagesConversationList");
+  const threadEl = E("messagesThread");
+  if (!conversationsEl || !threadEl) return;
 
   if (!state.currentUser) {
-    list.innerHTML = "";
-    thread.innerHTML = "";
+    conversationsEl.innerHTML = "";
+    threadEl.innerHTML = "";
     return;
   }
 
-  if (state.messageConversationsLoading) {
-    list.innerHTML = `<div class="profile-messages__empty">${esc(messagesLabel("loading", "Loading conversations..."))}</div>`;
-  } else if (!state.messageConversations.length) {
-    list.innerHTML = `<div class="profile-messages__empty">${esc(messagesLabel("noConversations", "No conversations yet"))}</div>`;
+  const conversations = Array.isArray(state.messagesConversations) ? state.messagesConversations : [];
+  if (state.messagesLoading && !conversations.length) {
+    conversationsEl.innerHTML = `<div class="profile-friends__empty">${esc(messagesLabel("loading", "Loading messages..."))}</div>`;
+  } else if (!conversations.length) {
+    conversationsEl.innerHTML = `<div class="profile-friends__empty">${esc(messagesLabel("noConversations", "No conversations yet"))}</div>`;
   } else {
-    list.innerHTML = state.messageConversations.map(renderMessageConversationItem).join("");
+    conversationsEl.innerHTML = conversations.map(renderConversationListItem).join("");
   }
 
-  thread.innerHTML = renderMessageThread();
-}
-
-function renderMessageConversationItem(conversation) {
-  const active = String(conversation.id) === String(state.selectedMessageConversationID);
-  const last = conversation.lastMessage;
-  const preview = last?.body
-    ? `${last.sender?.username ? `${last.sender.username}: ` : ""}${last.body}`
-    : messagesLabel("noMessages", "No messages yet");
-  const time = last?.createdAt ? formatDate(last.createdAt) : formatDate(conversation.updatedAt);
-  return `<button type="button" class="profile-message-conversation ${active ? "active" : ""}" data-message-conversation="${esc(conversation.id)}" aria-pressed="${active}">
-    <span class="profile-message-conversation__title">${esc(conversationTitle(conversation))}</span>
-    <span class="profile-message-conversation__preview">${esc(preview)}</span>
-    <span class="profile-message-conversation__time">${esc(time)}</span>
-  </button>`;
-}
-
-function renderMessageThread() {
-  if (!state.selectedMessageConversationID) {
-    return `<div class="profile-messages__empty">${esc(messagesLabel("selectConversation", "Select a conversation"))}</div>`;
-  }
-  if (state.selectedMessageLoading) {
-    return `<div class="profile-messages__empty">${esc(messagesLabel("loadingMessages", "Loading messages..."))}</div>`;
+  if (!state.selectedConversationId) {
+    threadEl.innerHTML = `<div class="messages-empty">${esc(messagesLabel("selectConversation", "Select a conversation"))}</div>`;
+    return;
   }
 
-  const conversation = state.selectedMessageConversation;
-  const messages = Array.isArray(state.selectedMessageMessages) ? state.selectedMessageMessages : [];
-  const items = messages.length
-    ? `<div class="profile-message-list" id="messageThreadList">${messages.map(renderMessageBubble).join("")}</div>`
-    : `<div class="profile-messages__empty">${esc(messagesLabel("noMessages", "No messages yet"))}</div>`;
+  const conversation = state.messagesConversation || conversations.find((item) => String(item.id) === String(state.selectedConversationId));
+  if (!conversation) {
+    threadEl.innerHTML = `<div class="messages-empty">${esc(messagesLabel("loadingThread", "Loading conversation..."))}</div>`;
+    return;
+  }
 
-  return `<div class="profile-message-thread__head">
+  const messages = Array.isArray(state.messages) ? state.messages : [];
+  const messagesHTML = state.messagesLoading
+    ? `<div class="messages-empty">${esc(messagesLabel("loadingThread", "Loading conversation..."))}</div>`
+    : messages.length
+      ? messages.map((message) => renderMessageBubble(message, conversation)).join("")
+      : `<div class="messages-empty">${esc(messagesLabel("noMessages", "No messages yet"))}</div>`;
+  const disabled = Boolean(conversation.blocked || state.messagesSending);
+
+  threadEl.innerHTML = `<div class="messages-thread__head">
       <strong>${esc(conversationTitle(conversation))}</strong>
-      <button type="button" class="profile-result__btn profile-result__btn--muted" data-message-thread-refresh="${esc(state.selectedMessageConversationID)}">${esc(messagesLabel("refresh", "Refresh"))}</button>
+      ${conversation.blocked ? `<span>${esc(messagesLabel("blocked", "Cannot interact with blocked user"))}</span>` : ""}
     </div>
-    ${items}
-    <form id="messageThreadForm" class="profile-message-form">
-      <label for="messageBody">${esc(messagesLabel("write", "Write a message"))}</label>
-      <textarea id="messageBody" maxlength="${maxMessageBodyLength}" rows="3" placeholder="${esc(messagesLabel("write", "Write a message"))}" ${state.messageSending ? "disabled" : ""}></textarea>
-      <div class="profile-message-form__actions">
+    <div class="messages-thread__body">${messagesHTML}</div>
+    <form id="messagesSendForm" class="messages-compose">
+      <label class="sr-only" for="messagesBody">${esc(messagesLabel("write", "Write a message"))}</label>
+      <textarea id="messagesBody" maxlength="1000" rows="3" placeholder="${esc(messagesLabel("write", "Write a message"))}" ${disabled ? "disabled" : ""}></textarea>
+      <div class="messages-compose__actions">
         <span>${esc(messagesLabel("limit", "1000 characters max"))}</span>
-        <button type="submit" class="btn primary btn-compact" ${state.messageSending ? "disabled" : ""}>${esc(messagesLabel("send", "Send"))}</button>
+        <button type="submit" class="btn primary btn-compact" ${disabled ? "disabled" : ""}>${esc(messagesLabel("send", "Send"))}</button>
       </div>
     </form>`;
 }
 
-function renderMessageBubble(message) {
-  const own = String(message.sender?.id) === String(state.currentUser?.id);
-  const sender = message.sender?.displayName || message.sender?.username || messagesLabel("unknownUser", "User");
-  return `<article class="profile-message ${own ? "profile-message--own" : ""}">
-    <div class="profile-message__meta">
-      <strong>${esc(sender)}</strong>
-      <span>${esc(formatDate(message.createdAt))}</span>
+function renderConversationListItem(conversation) {
+  const active = String(conversation.id) === String(state.selectedConversationId);
+  const last = conversation.lastMessage;
+  const preview = last?.body
+    ? `${messageSenderName(conversation, last.senderId)}: ${last.body}`
+    : messagesLabel("noMessagesShort", "No messages yet");
+  const time = last?.createdAt || conversation.updatedAt;
+  return `<button type="button" class="messages-conversation ${active ? "active" : ""}" data-message-conversation="${esc(conversation.id)}" aria-pressed="${active}">
+    <span>${esc(conversationTitle(conversation))}</span>
+    <small>${esc(preview)}${time ? ` - ${esc(formatDate(time))}` : ""}</small>
+  </button>`;
+}
+
+function renderMessageBubble(message, conversation) {
+  const own = Number(message.senderId) === Number(state.currentUser?.id);
+  const reportLabel = typeof safetyLabel === "function" ? safetyLabel("report", "Report") : "Report";
+  return `<article class="message-bubble ${own ? "message-bubble--own" : ""}">
+    <div class="message-bubble__meta">
+      <span>${esc(messageSenderName(conversation, message.senderId))} - ${esc(formatDate(message.createdAt))}</span>
+      <span>
+        ${own ? `<button type="button" class="profile-result__btn profile-result__btn--danger" data-message-delete="${esc(message.id)}">${esc(messagesLabel("delete", "Delete"))}</button>` : ""}
+        <button type="button" class="profile-result__btn profile-result__btn--muted" data-report-message="${esc(message.id)}">${esc(reportLabel)}</button>
+      </span>
     </div>
     <p>${esc(message.body || "")}</p>
-    ${own ? `<button type="button" class="profile-message__delete" data-message-delete="${esc(message.id)}">${esc(messagesLabel("delete", "Delete message"))}</button>` : ""}
   </article>`;
 }
 
@@ -118,7 +128,7 @@ async function loadMessageConversations(options = {}) {
     return;
   }
   const { silent = false } = options;
-  state.messageConversationsLoading = !silent;
+  state.messagesLoading = !silent;
   renderMessagesPanel();
   try {
     const response = await fetchMessageConversations();
@@ -128,25 +138,24 @@ async function loadMessageConversations(options = {}) {
       renderAuthPanel();
       return;
     }
-    if (!response.ok) throw new Error(messagesLabel("loadFailed", "Could not load conversations"));
+    if (!response.ok) throw new Error(messagesLabel("loadFailed", "Could not load messages"));
     const data = await response.json();
-    state.messageConversations = Array.isArray(data.conversations) ? data.conversations : [];
-    if (state.selectedMessageConversationID && !state.messageConversations.some((conversation) => String(conversation.id) === String(state.selectedMessageConversationID))) {
-      state.selectedMessageConversationID = null;
-      state.selectedMessageConversation = null;
-      state.selectedMessageMessages = [];
+    state.messagesConversations = Array.isArray(data.conversations) ? data.conversations : [];
+    if (state.selectedConversationId && !state.messagesConversations.some((item) => String(item.id) === String(state.selectedConversationId))) {
+      state.selectedConversationId = "";
+      state.messagesConversation = null;
+      state.messages = [];
     }
   } finally {
-    state.messageConversationsLoading = false;
+    state.messagesLoading = false;
     renderMessagesPanel();
   }
 }
 
-async function selectMessageConversation(id, options = {}) {
+async function openMessageConversation(id) {
   if (!state.currentUser || !id) return;
-  const { silent = false } = options;
-  state.selectedMessageConversationID = id;
-  state.selectedMessageLoading = !silent;
+  state.selectedConversationId = String(id);
+  state.messagesLoading = true;
   renderMessagesPanel();
   try {
     const response = await fetchMessageConversation(id);
@@ -156,44 +165,60 @@ async function selectMessageConversation(id, options = {}) {
       renderAuthPanel();
       return;
     }
-    if (!response.ok) throw new Error(messagesLabel("threadLoadFailed", "Could not load conversation"));
+    if (!response.ok) throw new Error(messagesLabel("threadFailed", "Could not load conversation"));
     const data = await response.json();
-    state.selectedMessageConversation = data.conversation || null;
-    state.selectedMessageMessages = Array.isArray(data.messages) ? data.messages : [];
+    state.messagesConversation = data.conversation || null;
+    state.messages = Array.isArray(data.messages) ? data.messages : [];
   } finally {
-    state.selectedMessageLoading = false;
+    state.messagesLoading = false;
     renderMessagesPanel();
   }
 }
 
-async function submitConversationMessage() {
-  if (!state.currentUser || !state.selectedMessageConversationID) return;
-  const input = E("messageBody");
+async function startMessageFromProfile(username) {
+  if (!state.currentUser) {
+    showToast(messagesLabel("loginPrompt", "Log in to send messages"), { title: messagesLabel("title", "Inbox"), tone: "error" });
+    setAuthPanelOpen(true);
+    return;
+  }
+  const { response, data } = await startMessageConversation(username);
+  if (!response.ok) {
+    throw new Error(data.error || messagesLabel("startFailed", "Could not start conversation"));
+  }
+  await loadMessageConversations({ silent: true });
+  await openMessageConversation(data.id);
+  setAuthPanelOpen(true);
+  showToast(messagesLabel("opened", "Conversation opened"), { title: messagesLabel("title", "Inbox"), duration: 2200 });
+}
+
+async function sendSelectedConversationMessage() {
+  if (!state.selectedConversationId) return;
+  const input = E("messagesBody");
   const body = String(input?.value || "").trim();
   if (!body) {
     showToast(messagesLabel("empty", "Message cannot be empty"), { title: messagesLabel("error", "Messages error"), tone: "error" });
     return;
   }
-  if ([...body].length > maxMessageBodyLength) {
+  if ([...body].length > 1000) {
     showToast(messagesLabel("tooLong", "Message is too long"), { title: messagesLabel("error", "Messages error"), tone: "error" });
     return;
   }
 
-  state.messageSending = true;
+  state.messagesSending = true;
   renderMessagesPanel();
-  const { response, data } = await sendConversationMessage(state.selectedMessageConversationID, body);
-  state.messageSending = false;
+  const { response, data } = await sendConversationMessage(state.selectedConversationId, body);
+  state.messagesSending = false;
   if (!response.ok) {
     renderMessagesPanel();
     throw new Error(data.error || messagesLabel("sendFailed", "Could not send message"));
   }
-  state.selectedMessageMessages = [...state.selectedMessageMessages, data];
+  state.messages = [...state.messages, data];
   if (input) input.value = "";
   await loadMessageConversations({ silent: true });
-  renderMessagesPanel();
+  await openMessageConversation(state.selectedConversationId);
 }
 
-async function removeConversationMessage(id) {
+async function removeMessage(id) {
   const confirmed = await askConfirm(messagesLabel("deleteConfirm", "Delete this message?"));
   if (!confirmed) return;
   const response = await deleteConversationMessage(id);
@@ -204,74 +229,56 @@ async function removeConversationMessage(id) {
     } catch (_) {}
     throw new Error(data.error || messagesLabel("deleteFailed", "Could not delete message"));
   }
-  state.selectedMessageMessages = state.selectedMessageMessages.filter((message) => String(message.id) !== String(id));
-  await loadMessageConversations({ silent: true });
+  state.messages = state.messages.filter((message) => String(message.id) !== String(id));
   renderMessagesPanel();
-}
-
-async function openMessageConversationFromProfile(username) {
-  if (!state.currentUser) {
-    showToast(messagesLabel("loginPrompt", "Log in to send messages"), { title: messagesLabel("title", "Messages"), tone: "info" });
-    setAuthPanelOpen(true);
-    return;
-  }
-  const { response, data } = await startMessageConversation(username);
-  if (!response.ok) {
-    throw new Error(data.error || messagesLabel("startFailed", "Could not start conversation"));
-  }
-  state.selectedMessageConversationID = data.id;
-  state.selectedMessageConversation = data;
-  setAuthPanelOpen(true);
   await loadMessageConversations({ silent: true });
-  await selectMessageConversation(data.id, { silent: true });
-  showToast(messagesLabel("opened", "Conversation opened"), { title: messagesLabel("title", "Messages"), duration: 2200 });
 }
 
 function renderPublicProfileMessageAction(profile, ownProfile) {
   if (ownProfile) return "";
+  const viewerBlock = profile.viewerBlock || {};
+  if (viewerBlock.targetBlockedViewer || viewerBlock.viewerBlockedTarget) return "";
   if (!state.currentUser) {
-    return `<div class="public-profile-message-state">${esc(messagesLabel("loginPrompt", "Log in to send messages"))}</div>`;
+    return `<span class="public-profile-friend-state public-profile-friend-state--muted">${esc(messagesLabel("loginPrompt", "Log in to send messages"))}</span>`;
   }
-  return `<div class="public-profile-message-actions">
-    <button type="button" class="result-type-btn" data-public-message-start="${esc(profile.username)}">${esc(messagesLabel("messageUser", "Message this user"))}</button>
-  </div>`;
+  return `<button type="button" class="result-type-btn result-type-btn--muted" data-message-profile="${esc(profile.username)}">${esc(messagesLabel("messageUser", "Message"))}</button>`;
 }
 
 function wireMessagesEvents() {
   E("profileMessagesRefreshBtn")?.addEventListener("click", () => loadMessageConversations().catch((error) => showToast(error.message, { title: messagesLabel("error", "Messages error"), tone: "error" })));
 
-  E("messageConversationsList")?.addEventListener("click", (event) => {
+  E("messagesConversationList")?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
-    const conversation = target?.closest("[data-message-conversation]");
-    if (conversation?.dataset.messageConversation) {
-      selectMessageConversation(conversation.dataset.messageConversation).catch((error) => showToast(error.message, { title: messagesLabel("error", "Messages error"), tone: "error" }));
+    const button = target?.closest("[data-message-conversation]");
+    if (button?.dataset.messageConversation) {
+      openMessageConversation(button.dataset.messageConversation).catch((error) => showToast(error.message, { title: messagesLabel("error", "Messages error"), tone: "error" }));
     }
   });
 
-  E("messageThread")?.addEventListener("click", (event) => {
+  E("messagesThread")?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
-    const refresh = target?.closest("[data-message-thread-refresh]");
-    if (refresh?.dataset.messageThreadRefresh) {
-      selectMessageConversation(refresh.dataset.messageThreadRefresh).catch((error) => showToast(error.message, { title: messagesLabel("error", "Messages error"), tone: "error" }));
-      return;
-    }
     const del = target?.closest("[data-message-delete]");
     if (del?.dataset.messageDelete) {
-      removeConversationMessage(del.dataset.messageDelete).catch((error) => showToast(error.message, { title: messagesLabel("error", "Messages error"), tone: "error" }));
+      removeMessage(del.dataset.messageDelete).catch((error) => showToast(error.message, { title: messagesLabel("error", "Messages error"), tone: "error" }));
+      return;
+    }
+    const report = target?.closest("[data-report-message]");
+    if (report?.dataset.reportMessage && typeof promptReport === "function") {
+      promptReport({ targetType: "message", targetId: Number(report.dataset.reportMessage) }).catch((error) => showToast(error.message, { title: messagesLabel("error", "Messages error"), tone: "error" }));
     }
   });
 
-  E("messageThread")?.addEventListener("submit", (event) => {
-    if (!(event.target instanceof HTMLFormElement) || event.target.id !== "messageThreadForm") return;
+  E("messagesThread")?.addEventListener("submit", (event) => {
+    if (!(event.target instanceof HTMLFormElement) || event.target.id !== "messagesSendForm") return;
     event.preventDefault();
-    submitConversationMessage().catch((error) => showToast(error.message, { title: messagesLabel("error", "Messages error"), tone: "error" }));
+    sendSelectedConversationMessage().catch((error) => showToast(error.message, { title: messagesLabel("error", "Messages error"), tone: "error" }));
   });
 
   E("profileSection")?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
-    const start = target?.closest("[data-public-message-start]");
-    if (start?.dataset.publicMessageStart) {
-      openMessageConversationFromProfile(start.dataset.publicMessageStart).catch((error) => showToast(error.message, { title: messagesLabel("error", "Messages error"), tone: "error" }));
+    const button = target?.closest("[data-message-profile]");
+    if (button?.dataset.messageProfile) {
+      startMessageFromProfile(button.dataset.messageProfile).catch((error) => showToast(error.message, { title: messagesLabel("error", "Messages error"), tone: "error" }));
     }
   });
 }

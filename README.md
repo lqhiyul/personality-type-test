@@ -2,183 +2,98 @@
 
 [![CI](https://github.com/lqhiyul/personality-type-test/actions/workflows/go.yml/badge.svg)](https://github.com/lqhiyul/personality-type-test/actions/workflows/go.yml)
 ![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-persistence-003B57?logo=sqlite&logoColor=white)
 ![Vanilla JS](https://img.shields.io/badge/Frontend-Vanilla%20JS-F7DF1E?logo=javascript&logoColor=111)
 
-**Live Demo:** [personality-type-test-69d9.onrender.com](https://personality-type-test-69d9.onrender.com)
+A portfolio-grade full-stack MBTI-style quiz with a Go backend, vanilla JavaScript frontend, SQLite-backed accounts/social features, JSON anonymous submissions, admin exports, and browser smoke tests.
 
-Note: The Render free plan may spin down after inactivity, so the first request can take 30–60 seconds.
+**Live demo:** [personality-type-test-69d9.onrender.com](https://personality-type-test-69d9.onrender.com)
 
-A lightweight full-stack personality type test with a Go HTTP backend, modular vanilla JavaScript frontend, local JSON result storage, SQLite-backed user accounts, result insights, compatibility, friend requests, public profile comments, private user messages, share cards, and an admin/export panel.
+The Render free plan may sleep after inactivity, so the first request can take 30-60 seconds. This is an educational portfolio project, not a clinical personality assessment.
 
-**Quick links:** [Preview](#preview) | [Features](#features) | [Quick Start](#quick-start) | [Docker](#docker) | [Quality Checks](#quality-checks) | [API](#api-overview)
+## What This Demonstrates
 
-## Preview
+- Clean Go project structure with `cmd/server`, `cmd/migrate`, `cmd/seed`, and focused packages under `internal/`.
+- Secure cookie auth basics: bcrypt passwords, persistent hashed SQLite sessions, CSRF protection, SameSite cookies, security headers, and safe proxy-aware rate limiting.
+- Vanilla JavaScript app organization with centralized API behavior, CSRF-aware requests, and practical Playwright E2E smoke coverage.
+- SQLite persistence for accounts, sessions, profiles, friends, comments, messages, blocks, reports, and user result history.
+- JSON persistence for anonymous quiz submissions and admin export/statistics workflows.
+- CI with gofmt, vet, staticcheck, tests, race tests, coverage, JS syntax checks, Playwright, Docker build, Dependabot, and CodeQL.
 
-The repository includes a lightweight preview asset. It is not a real browser screenshot.
+## Screenshots
 
-![Project preview](assets/preview.svg)
+| Home | Result |
+| --- | --- |
+| ![Home](docs/screenshots/home.png) | ![Quiz result](docs/screenshots/quiz-result.png) |
 
-Real browser screenshots are not committed yet. After running the app locally, capture and add:
+| Types | Compatibility |
+| --- | --- |
+| ![Types](docs/screenshots/types.png) | ![Compatibility](docs/screenshots/compatibility.png) |
 
-```text
-assets/screenshots/home.png
-assets/screenshots/quiz.png
-assets/screenshots/result.png
-assets/screenshots/types.png
-assets/screenshots/admin.png
-```
-
-When those files exist, replace this note with a short screenshot gallery.
+| Profile | Admin |
+| --- | --- |
+| ![Profile](docs/screenshots/profile.png) | ![Admin](docs/screenshots/admin.png) |
 
 ## Features
 
-- 28-question MBTI-style quiz with progress tracking and draft saving in `localStorage`.
-- Result page with type breakdown, confidence notes, similar types, copy/share actions, and Telegram CTA.
-- Searchable catalog of all 16 personality types with localized profile content.
-- Type compatibility comparison for friendship, relationships, and work.
-- Hidden admin panel with login, logout, search, delete, clear, CSV export, JSON export, and demo/autopass mode.
-- In-memory login rate limiting for repeated failed admin login attempts by IP address.
-- Email/password user registration and login with bcrypt password hashing and an HttpOnly session cookie.
-- Private My Account result history for logged-in users, including primary result selection and deleting own saved results.
-- Public username profiles with editable display name, short bio, avatar preset, optional primary MBTI result, optional completed-test count, optional public friends list, and public/private visibility.
-- Public profile comments: logged-in users can post on public profiles, and comment authors or profile owners can delete comments.
-- Simple friends system with incoming friend requests, accepting requests, removing friends, and compatibility scores based on both users' primary MBTI results.
-- Simple private messaging between registered users with plain-text one-to-one conversations, an Inbox UI, manual refresh, and deleting only your own messages.
-- Local JSON persistence with safer temp-file writes and rename.
-- SQLite user storage for accounts and logged-in saved test results.
-- Embedded static assets, Docker support, GitHub Actions, Go tests, and JavaScript syntax checks.
+- 28-question MBTI-style quiz with result breakdown and localized frontend content.
+- Anonymous result submission to JSON storage.
+- User registration, login, logout, profile settings, and saved result history.
+- Public profiles, profile comments, friends, compatibility, private conversations, blocks, and reports.
+- Admin panel with result review, statistics, CSV/JSON export, report review, delete, and clear actions.
+- Static frontend served by Go, Docker support, migration/seed commands, and local Playwright E2E tests.
 
-## Tech Stack
+## Architecture
 
-- **Backend:** Go 1.22, standard `net/http`, embedded static files.
-- **Frontend:** HTML, CSS, modular vanilla JavaScript.
-- **Storage:** anonymous quiz submissions use local JSON at `data/results.json`; user accounts and logged-in saved results use SQLite at `data/app.db` by default.
-- **Tooling:** Docker, Makefile, GitHub Actions, Node-based JavaScript syntax check.
+```mermaid
+flowchart LR
+  Browser["Browser / vanilla JS"] --> Server["cmd/server Go HTTP server"]
+  Server --> Middleware["CSRF, security headers, request IDs, logging"]
+  Server --> App["internal/app handlers and workflows"]
+  App --> Scoring["internal/scoring"]
+  App --> Sessions["internal/sessions hashed SQLite sessions"]
+  App --> SQLite["SQLite authenticated data"]
+  App --> JSON["JSON anonymous submissions"]
+  App --> Admin["Admin stats and export"]
+```
 
-## What This Project Demonstrates
-
-- Building a small full-stack web app without a heavy frontend framework.
-- Designing REST-style JSON endpoints with validation and clear error responses.
-- Managing frontend state with simple JavaScript modules.
-- Persisting data locally while keeping the storage layer easy to review.
-- Implementing basic admin sessions, user sessions, result exports, and failed-login rate limiting.
-- Keeping the app portable with Docker and environment-based configuration.
-- Maintaining confidence with `go vet`, Go tests, race-test CI, build checks, and frontend syntax checks.
+More detail: [docs/architecture.md](docs/architecture.md), [docs/api.md](docs/api.md), [docs/security.md](docs/security.md).
 
 ## Quick Start
 
-Set the environment variables directly, or copy values from [.env.example](.env.example) into your local environment manager.
-
-PowerShell:
-
-```powershell
-$env:HOST = "127.0.0.1"
-$env:PORT = "8080"
-$env:ADMIN_PASSWORD = "change-me"
-go run .
-```
-
-macOS/Linux shell:
-
 ```bash
-HOST=127.0.0.1 PORT=8080 ADMIN_PASSWORD=change-me go run .
+cp .env.example .env
+go run ./cmd/server
 ```
 
 Open `http://localhost:8080`.
 
-Admin/QA tools are hidden from the normal public UI. Open `http://localhost:8080/?admin=1` to show the admin panel, or `http://localhost:8080/?qa=1` to show the subtle QA entry, then log in with `ADMIN_PASSWORD`.
-
-For phone testing on the same Wi-Fi network, bind to all interfaces:
-
-```powershell
-$env:HOST = "0.0.0.0"
-$env:PORT = "8080"
-$env:COOKIE_SECURE = "false"
-go run .
-```
-
-Then open `http://LOCAL_PC_IP:8080` from the phone. See [docs/local-network-testing.md](docs/local-network-testing.md) for the checklist.
-
-## Docker
-
-```bash
-docker build -t personality-type-test .
-docker run --rm -p 8080:8080 -e ADMIN_PASSWORD="strong-password" personality-type-test
-```
-
-The image runs as a non-root user, exposes port `8080`, and includes a `/healthz` healthcheck.
+Admin tools are hidden by default. Open `http://localhost:8080/?admin=1` and log in with `ADMIN_PASSWORD`.
 
 ## Configuration
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `HOST` | empty | Optional bind host. Use `127.0.0.1` locally or `0.0.0.0` for LAN/container runs. |
-| `PORT` | `8080` | HTTP port. Both `8080` and `:8080` are accepted. |
-| `ADDR` | empty | Exact bind address override, for example `127.0.0.1:8080`. Wins over `HOST` and `PORT`. |
-| `ADMIN_PASSWORD` | `change-me` | Password for the admin panel. Change it before public deploys. |
-| `DATA_FILE` | `data/results.json` | Path for saved quiz submissions. |
-| `DATABASE_PATH` | `data/app.db` | SQLite database path for user accounts and logged-in saved test results. |
-| `COOKIE_SECURE` | `false` | Keep `false` locally. Set to `true` only behind HTTPS. |
+| `HOST` | empty | Bind host, for example `127.0.0.1` locally or `0.0.0.0` in containers. |
+| `PORT` | `8080` | HTTP port. |
+| `ADDR` | empty | Exact address override. |
+| `ADMIN_PASSWORD` | `change-me` | Demo admin password. Must be changed in production mode. |
+| `DATA_FILE` | `data/results.json` | JSON file for anonymous submissions. |
+| `DATABASE_PATH` | `data/app.db` | SQLite database path. |
+| `COOKIE_SECURE` | `false` | Set `true` behind HTTPS. Required in production mode. |
+| `PRODUCTION` / `APP_ENV` | `false` / `development` | Enables production safety validation. |
+| `TRUSTED_PROXY_CIDRS` | empty | Comma-separated trusted proxy CIDRs for `X-Forwarded-For`. |
 
-Runtime data is ignored by Git. The `data/results.json` file is created automatically after the first saved anonymous result, and `data/app.db` is created when SQLite initializes.
+Runtime data is ignored by Git. The JSON result file and SQLite database are created automatically when the app first needs them.
 
-## User Accounts
-
-Regular users can register and log in with username, email, and password. Passwords are stored only as bcrypt hashes in SQLite, and regular user sessions use a separate `HttpOnly` `SameSite=Lax` cookie named `user_session`.
-
-When a logged-in user completes the quiz, the app keeps the existing anonymous JSON save and also stores a private copy in SQLite. The Account panel shows the current user's saved result history, latest result, optional primary type, and actions to mark a result as primary or delete one of their own results.
-
-Users can also open a public profile at `/?profile=username`. Public profiles show only safe public data: username, display name, avatar preset, and the public fields the owner has enabled. A user can make the profile private, hide the primary MBTI result, hide the completed test count, and hide the public friends list. Email, password hashes, private answers, and full saved result history are not public.
-
-Public profiles also support simple comments. Logged-out visitors can read comments on public profiles, while logged-in users can post plain-text comments up to 500 characters. Comment authors can delete their own comments, and profile owners can moderate comments on their own profiles. Private profiles hide comments and reject new comments. There are no comment likes, replies, or notifications in this phase.
-
-Logged-in users can send friend requests from another user's public profile. Incoming requests appear in My Account, where the target user can accept them. Accepted friends are shown in both users' private friends lists. Public profiles can show a compact public friends preview only when the profile owner enables it. If both users have selected a primary MBTI result, the private friends list shows friendship, relationship, and work compatibility scores. If either user has no primary result, the UI shows compatibility as unavailable.
-
-Logged-in users can also start a private one-to-one conversation from another user's profile. Messages are plain text, trimmed to 1-1000 characters, and shown in a simple Inbox inside My Account. Conversation and message APIs are scoped to participants only. Users can delete only messages they sent; deleted message bodies are cleared and no longer shown. This phase intentionally has no WebSocket, real-time chat, notifications, file/image uploads, group chats, reactions, or message editing.
-
-The regular user auth endpoints are separate from the admin endpoints:
-
-| Method | Route | Description |
-| --- | --- | --- |
-| `POST` | `/api/auth/register` | Create a regular user account and start a user session. |
-| `POST` | `/api/auth/login` | Log in by email or username. |
-| `POST` | `/api/auth/logout` | Clear the regular user session. |
-| `GET` | `/api/auth/me` | Return the current logged-in user. |
-| `PATCH` | `/api/me/profile` | Update the current user's public display name, bio, avatar preset, and privacy settings. |
-| `GET` | `/api/me/results` | List the current user's saved test results. |
-| `POST` | `/api/me/results/{id}/primary` | Mark one of the current user's saved results as primary. |
-| `DELETE` | `/api/me/results/{id}` | Delete one of the current user's saved results. |
-| `GET` | `/api/users/{username}` | Return a safe public profile by username, respecting privacy settings. |
-| `GET` | `/api/users/{username}/comments` | List latest public profile comments when the profile is public. |
-| `POST` | `/api/users/{username}/comments` | Add a plain-text comment to a public profile as the logged-in user. |
-| `DELETE` | `/api/profile-comments/{id}` | Delete a comment as its author or the profile owner. |
-| `POST` | `/api/friends/request` | Send a friend request to a username. |
-| `GET` | `/api/friends/requests` | List incoming pending friend requests. |
-| `POST` | `/api/friends/requests/{id}/accept` | Accept an incoming pending friend request. |
-| `GET` | `/api/friends` | List accepted friends with primary type and compatibility state. |
-| `DELETE` | `/api/friends/{id}` | Remove an accepted friendship that includes the current user. |
-| `POST` | `/api/messages/start` | Create or return a one-to-one conversation with a username. |
-| `GET` | `/api/messages/conversations` | List conversations for the current user with safe participant fields and last-message preview. |
-| `GET` | `/api/messages/conversations/{id}` | Read a conversation and its non-deleted messages if the current user is a participant. |
-| `POST` | `/api/messages/conversations/{id}` | Send a 1-1000 character plain-text message as a participant. |
-| `DELETE` | `/api/messages/{id}` | Soft-delete one message sent by the current user. |
-
-The current anonymous quiz flow still saves submissions through the existing JSON `DATA_FILE` store, so the admin list, export, delete, clear, and stats tools continue to use the same behavior as before. Logged-in result history is private to the current user; public profiles show only fields enabled by the owner.
-
-Set `DATABASE_PATH` to move the SQLite file. If it is empty, the app falls back to `data/app.db`. The default `data/` directory is ignored by Git, so runtime database files should not be committed.
-
-On Render Free, account data in SQLite needs a persistent disk if it must survive restarts, redeploys, or instance replacement.
-
-## Quality Checks
-
-Direct commands:
+## Common Commands
 
 ```bash
-go fmt ./...
-go vet ./...
-go test ./...
-go build ./...
-node scripts/js-check.mjs
+go run ./cmd/server
+go run ./cmd/migrate
+go run ./cmd/seed
+npm run js-check
+npm run e2e
 ```
 
 Optional Makefile targets, when `make` is available:
@@ -186,152 +101,62 @@ Optional Makefile targets, when `make` is available:
 ```bash
 make fmt
 make vet
+make staticcheck
 make test
 make race
-make build
+make coverage
 make js-check
+make e2e
+make docker-build
 make check
 ```
 
-GitHub Actions runs Go formatting, JavaScript syntax checks, `go vet`, `go test`, `go test -race`, and `go build`.
+Install Playwright browsers once before local E2E runs:
 
-## Project Structure
-
-```text
-.
-+-- .github/workflows/go.yml
-+-- assets/
-|   +-- preview.svg
-|   +-- screenshots/
-+-- docs/local-network-testing.md
-+-- scripts/js-check.mjs
-+-- web/static/
-|   +-- index.html
-|   +-- style.css
-|   +-- js/
-|   |   +-- api.js
-|   |   +-- app.js
-|   |   +-- admin.js
-|   |   +-- auth.js
-|   |   +-- compatibility.js
-|   |   +-- dom.js
-|   |   +-- events.js
-|   |   +-- i18n.js
-|   |   +-- messages.js
-|   |   +-- profile.js
-|   |   +-- quiz.js
-|   |   +-- results.js
-|   |   +-- share.js
-|   |   +-- state.js
-|   |   +-- types.js
-|   |   +-- ui.js
-|   |   +-- utils.js
-|   +-- assets/share-cards/
-|   +-- compatibility-engine.js
-|   +-- content-*.js
-|   +-- result-insights.js
-|   +-- types-data.js
-+-- config.go
-+-- db.go
-+-- handlers.go
-+-- login_rate_limiter.go
-+-- main.go
-+-- message_handlers.go
-+-- message_store.go
-+-- password.go
-+-- scoring.go
-+-- sessions.go
-+-- store.go
-+-- user_auth_handlers.go
-+-- user_profile_handlers.go
-+-- user_results_handlers.go
-+-- user_sessions.go
-+-- user_store.go
-+-- *_test.go
-+-- Dockerfile
-+-- Makefile
+```bash
+npx playwright install chromium
 ```
 
-## API Overview
+## Docker
 
-| Method | Route | Description |
-| --- | --- | --- |
-| `GET` | `/` | Main page. |
-| `GET` | `/healthz` | Healthcheck endpoint. |
-| `POST` | `/api/submit` | Save a completed test and return the result profile. |
-| `POST` | `/api/auth/register` | Register a regular user account and set `user_session`. |
-| `POST` | `/api/auth/login` | Log in a regular user by email or username. |
-| `POST` | `/api/auth/logout` | Log out the regular user. |
-| `GET` | `/api/auth/me` | Return the current regular user. |
-| `PATCH` | `/api/me/profile` | Update the current user's public profile fields and privacy settings: `profileVisibility`, `showPrimaryResult`, `showCompletedCount`, and `showFriends`. |
-| `GET` | `/api/me/results` | Return the current user's saved result history. |
-| `POST` | `/api/me/results/{id}/primary` | Set the current user's primary saved result. |
-| `DELETE` | `/api/me/results/{id}` | Delete one saved result owned by the current user. |
-| `GET` | `/api/users/{username}` | Return safe public profile data by username, with private or hidden fields omitted. |
-| `GET` | `/api/users/{username}/comments` | Return latest comments for a public profile, with safe public author fields only. |
-| `POST` | `/api/users/{username}/comments` | Create a 1-500 character plain-text comment on a public profile as the logged-in user. |
-| `DELETE` | `/api/profile-comments/{id}` | Delete a profile comment as the comment author or profile owner. |
-| `POST` | `/api/friends/request` | Send a friend request to another user by username. |
-| `GET` | `/api/friends/requests` | Return incoming pending friend requests for the current user. |
-| `POST` | `/api/friends/requests/{id}/accept` | Accept an incoming friend request addressed to the current user. |
-| `GET` | `/api/friends` | Return accepted friends with safe public fields and compatibility. |
-| `DELETE` | `/api/friends/{id}` | Remove an accepted friendship that the current user belongs to. |
-| `POST` | `/api/messages/start` | Start or open a direct conversation with another username. |
-| `GET` | `/api/messages/conversations` | Return only conversations where the current user is a participant. |
-| `GET` | `/api/messages/conversations/{id}` | Return safe conversation details and non-deleted messages for participants only. |
-| `POST` | `/api/messages/conversations/{id}` | Send a trimmed plain-text message up to 1000 characters as a participant. |
-| `DELETE` | `/api/messages/{id}` | Delete only a message sent by the current user. |
-| `POST` | `/api/login` | Admin login with failed-attempt rate limiting. |
-| `POST` | `/api/logout` | Admin logout and session cookie cleanup. |
-| `GET` | `/api/results` | List saved results. |
-| `GET` | `/api/results/export` | Export saved results as CSV. |
-| `GET` | `/api/results/export?format=json` | Export saved results as JSON. |
-| `DELETE` | `/api/results` | Delete all results. |
-| `DELETE` | `/api/results/{id}` | Delete one result. |
-| `GET` | `/api/stats` | Return admin-only saved result statistics: total, average duration, type distribution, top types, axis distribution, and latest result timestamp when available. |
+```bash
+docker build -t personality-type-test .
+docker run --rm -p 8080:8080 -e HOST=0.0.0.0 -e ADMIN_PASSWORD="strong-password" personality-type-test
+```
 
-## Security Notes
+Mount `/app/data` for durable SQLite/JSON storage.
 
-- Admin access uses a single password configured through `ADMIN_PASSWORD`.
-- Admin results, export, delete, clear, and stats endpoints require an active admin session.
-- Regular user passwords are hashed with bcrypt before storage.
-- Regular user auth uses a separate `user_session` cookie from the admin session cookie.
-- Saved result history endpoints require a regular user session and scope every list, primary, and delete action by the current user ID.
-- Public profile responses never include email, password hashes, private answers, or full saved result history.
-- Private public profiles omit bio, primary MBTI, completed count, public friends list, and detailed profile data.
-- Profile owners can independently hide primary MBTI, completed test count, and the public friends list while keeping the profile itself public.
-- Profile comment responses expose only username, display name, avatar preset, created date, and plain-text body. Private profiles hide comments and reject new comments.
-- Comment deletion is limited to the comment author and the owner of the profile that received the comment.
-- Friend endpoints require a regular user session, prevent self-requests and duplicate pairs, allow accepting only by the addressee, and allow removing only accepted friendships that include the current user.
-- Friend list and request responses expose only safe public account fields, primary MBTI type, and compatibility state.
-- Messaging endpoints require a regular user session, prevent self-conversations, scope conversation reads/sends to participants, and allow deleting only the sender's own messages.
-- Message responses expose only safe participant fields, timestamps, and plain-text message bodies. They never include email, password hashes, private quiz answers, scores, or saved result history.
-- Profile editing is limited to display name, bio, a fixed allowlist of CSS avatar presets, and basic public-profile privacy settings. There are no custom avatar uploads.
-- Failed admin and regular user login attempts are rate-limited in memory per IP address.
-- Session cookies are `HttpOnly` and `SameSite=Lax`.
-- Set `COOKIE_SECURE=true` only when the app is served behind HTTPS.
-- The app is not intended to store sensitive personal data.
+## Migrations And Seed Data
 
-## Limitations and Trade-offs
+Migrations are versioned SQL files in `migrations/` and embedded for deployment from `internal/storage/sqlite/migrations/`. Applied versions are tracked in `schema_migrations`.
 
-- This is an educational/self-reflection tool, not a medical, psychological, or scientific diagnosis.
-- JSON file storage is simple and reviewable, but it is not ideal for multi-instance deployments.
-- Anonymous submissions still use the JSON store; logged-in saved history is stored separately in SQLite.
-- Sessions and login rate limits are in memory, so they reset when the process restarts.
-- Private messaging is deliberately simple: no WebSocket or real-time chat, no notifications, no group chats, no files/images, no reactions, and no message editing.
-- There is no Google OAuth, email verification, password reset, custom avatar upload, comment likes/replies, blocking, or reporting yet.
-- Friend requests are intentionally simple: no rejection UI, no notification feed, and no real-time updates.
-- SQLite account data needs persistent storage on Render if it must survive restarts or redeploys.
-- Real screenshots still need to be captured manually before the README has a full visual gallery.
-- Stats are computed from the saved JSON result fields; missing legacy timestamps are omitted from `latestResultAt`.
+```bash
+go run ./cmd/migrate
+go run ./cmd/seed
+```
 
-## Roadmap
+`cmd/seed` creates safe fake local users and refuses to run in production mode.
 
-- Add real screenshots or a short GIF from the running app.
-- Add a lightweight browser smoke test when it is worth the extra tooling.
-- Add pagination for admin results if the JSON file grows.
-- Add a carefully scoped next account feature, such as email verification, password reset, or OAuth.
+## Security Summary
 
-## Author
+- Passwords are bcrypt-hashed.
+- Session tokens are stored only as hashes in SQLite.
+- Unsafe methods require CSRF tokens.
+- Login rate limiting uses a safe proxy-aware client IP resolver.
+- Security headers are set by middleware.
+- Production mode rejects the default admin password and requires secure cookies.
 
-Built as a junior full-stack portfolio project by [lqhiyul](https://github.com/lqhiyul).
+See [docs/security.md](docs/security.md) and [docs/deployment.md](docs/deployment.md) for the full checklist.
+
+## Known Limitations
+
+- `ADMIN_PASSWORD` is a simple demo/admin model, not a multi-admin RBAC system.
+- SQLite is suitable for this portfolio app and small deployments, but not multi-replica high-write workloads.
+- MBTI-style output is educational/entertainment content, not clinical guidance.
+
+## Repository Notes
+
+- Development guide: [docs/development.md](docs/development.md)
+- Deployment guide: [docs/deployment.md](docs/deployment.md)
+- Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md)
+- Changelog: [CHANGELOG.md](CHANGELOG.md)

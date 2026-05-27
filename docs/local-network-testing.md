@@ -15,7 +15,7 @@ Use this mode when you want to open the local Go server from a phone on the same
    $env:HOST="0.0.0.0"
    $env:PORT="8080"
    $env:COOKIE_SECURE="false"
-   go run .
+   go run ./cmd/server
    ```
 
 4. On the phone, open:

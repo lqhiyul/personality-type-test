@@ -1,0 +1,13 @@
+{
+  "name": "personality-type-test",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "js-check": "node scripts/js-check.mjs",
+    "e2e": "playwright test",
+    "screenshots": "node scripts/capture-screenshots.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0"
+  }
+}

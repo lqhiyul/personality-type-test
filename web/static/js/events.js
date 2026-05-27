@@ -39,6 +39,7 @@ function wireEvents() {
   if (typeof wireAuthEvents === "function") wireAuthEvents();
   if (typeof wireProfileEvents === "function") wireProfileEvents();
   if (typeof wireFriendsEvents === "function") wireFriendsEvents();
+  if (typeof wireSafetyEvents === "function") wireSafetyEvents();
   if (typeof wireMessagesEvents === "function") wireMessagesEvents();
 
   document.querySelectorAll("[data-lang]").forEach((button) => {

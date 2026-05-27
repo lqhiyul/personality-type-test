@@ -3,6 +3,11 @@
 data/
 assets/
 docs/
+node_modules/
+playwright-report/
+test-results/
+.e2e-data/
+.screenshot-data/
 .vscode/
 
 *.exe
@@ -12,6 +17,7 @@ docs/
 *.tmp
 *.json.tmp
 coverage.out
+coverage.html
 
 .env
 .env.local

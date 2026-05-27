@@ -246,13 +246,16 @@ async function loginAdmin() {
   E("adminPanel")?.classList.add("visible");
   showInlineNotice({ title: t("ui.notices.done"), message: t("ui.notices.adminOpened"), tone: "success", duration: 2200 });
   refreshAdmin();
+  if (typeof loadAdminReports === "function") loadAdminReports().catch(() => {});
 }
 
 async function logoutAdmin() {
   await logoutRequest();
   E("adminPanel")?.classList.remove("visible");
   state.adminResults = [];
+  state.adminReports = [];
   renderAdminResults();
+  if (typeof renderAdminReportsPanel === "function") renderAdminReportsPanel();
   showInlineNotice({ title: t("ui.notices.done"), message: t("ui.notices.logoutDone"), tone: "success", duration: 2200 });
 }
 

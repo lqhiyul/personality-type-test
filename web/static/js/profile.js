@@ -87,7 +87,8 @@ async function openPublicProfile(username, options = {}) {
     if (!response.ok) throw new Error(publicProfileLabel("loadFailed", "Could not load profile"));
     state.publicProfile = await response.json();
     state.profileEditAvatarKey = avatarKeyOrDefault(state.publicProfile.avatarKey);
-    if (!state.publicProfile.isPrivate && state.publicProfile.profileVisibility !== "private") {
+    const blockedByProfileOwner = Boolean(state.publicProfile.viewerBlock?.targetBlockedViewer);
+    if (!blockedByProfileOwner && !state.publicProfile.isPrivate && state.publicProfile.profileVisibility !== "private") {
       await loadPublicProfileComments(normalized, { render: false });
     }
   } catch (error) {
@@ -140,6 +141,7 @@ function renderPublicProfile() {
         <button type="button" class="result-type-btn" data-profile-home>${esc(publicProfileLabel("backHome", "Back to quiz"))}</button>
       </div>
       ${typeof renderPublicProfileMessageAction === "function" ? renderPublicProfileMessageAction(profile, ownProfile) : ""}
+      ${typeof renderPublicProfileSafetyActions === "function" ? renderPublicProfileSafetyActions(profile, ownProfile) : ""}
       ${renderPublicProfileCommentsHidden()}
     </article>`;
     return;
@@ -170,8 +172,9 @@ function renderPublicProfile() {
       <div class="public-profile-actions">
         ${ownProfile ? `<button type="button" class="result-type-btn" data-profile-edit>${esc(state.profileEditOpen ? publicProfileLabel("closeEdit", "Close edit") : publicProfileLabel("edit", "Edit profile"))}</button>` : ""}
         <button type="button" class="result-type-btn result-type-btn--muted" data-profile-copy="${esc(profile.username)}">${esc(publicProfileLabel("copyLink", "Copy profile link"))}</button>
+        ${typeof renderPublicProfileMessageAction === "function" ? renderPublicProfileMessageAction(profile, ownProfile) : ""}
       </div>
-      ${typeof renderPublicProfileMessageAction === "function" ? renderPublicProfileMessageAction(profile, ownProfile) : ""}
+      ${typeof renderPublicProfileSafetyActions === "function" ? renderPublicProfileSafetyActions(profile, ownProfile) : ""}
       ${typeof renderPublicProfileFriendActions === "function" ? renderPublicProfileFriendActions(profile, ownProfile) : ""}
     </article>
     ${renderPublicProfileTypeCard(profile, type, typeSummary)}
@@ -254,7 +257,7 @@ function renderPublicProfileComments(profile) {
       : comments.length
         ? `<div class="public-profile-comments__list">${comments.map((comment) => renderPublicProfileComment(profile, comment)).join("")}</div>`
         : `<p class="public-profile-state">${esc(publicProfileLabel("commentsEmpty", "No comments yet"))}</p>`;
-  const form = renderPublicProfileCommentForm();
+  const form = renderPublicProfileCommentForm(profile);
 
   return `<article class="public-profile-card public-profile-comments">
     <div class="public-profile-comments__head">
@@ -270,6 +273,7 @@ function renderPublicProfileComment(profile, comment) {
   const author = comment.author || {};
   const key = avatarKeyOrDefault(author.avatarKey);
   const canDelete = canDeletePublicProfileComment(profile, comment);
+  const canReport = Boolean(state.currentUser && comment?.id);
   return `<article class="public-profile-comment">
     <div class="${esc(avatarClass(key))}" aria-hidden="true">${esc(avatarSymbolFor(key, author.username))}</div>
     <div class="public-profile-comment__body">
@@ -278,16 +282,22 @@ function renderPublicProfileComment(profile, comment) {
           <strong>${esc(author.displayName || author.username || publicProfileLabel("commentAuthor", "User"))}</strong>
           <span>@${esc(author.username || "")} - ${esc(formatDate(comment.createdAt))}</span>
         </div>
-        ${canDelete ? `<button type="button" class="profile-result__btn profile-result__btn--danger" data-profile-comment-delete="${esc(comment.id)}">${esc(publicProfileLabel("commentDelete", "Delete"))}</button>` : ""}
+        <span>
+          ${canReport ? `<button type="button" class="profile-result__btn profile-result__btn--muted" data-report-comment="${esc(comment.id)}">${esc(typeof safetyLabel === "function" ? safetyLabel("report", "Report") : "Report")}</button>` : ""}
+          ${canDelete ? `<button type="button" class="profile-result__btn profile-result__btn--danger" data-profile-comment-delete="${esc(comment.id)}">${esc(publicProfileLabel("commentDelete", "Delete"))}</button>` : ""}
+        </span>
       </div>
       <p>${esc(comment.body || "")}</p>
     </div>
   </article>`;
 }
 
-function renderPublicProfileCommentForm() {
+function renderPublicProfileCommentForm(profile) {
   if (!state.currentUser) {
     return `<p class="public-profile-comments__login">${esc(publicProfileLabel("commentsLogin", "Log in to comment"))}</p>`;
+  }
+  if (typeof profileInteractionBlocked === "function" && profileInteractionBlocked(profile)) {
+    return `<p class="public-profile-comments__login">${esc(typeof safetyLabel === "function" ? safetyLabel("cannotInteract", "Cannot interact with blocked user") : "Cannot interact with blocked user")}</p>`;
   }
   return `<form id="publicProfileCommentForm" class="public-profile-comment-form">
     <label for="publicProfileCommentBody">${esc(publicProfileLabel("commentWrite", "Write a comment"))}</label>
@@ -379,6 +389,10 @@ async function loadPublicProfileComments(username, options = {}) {
 
 async function submitPublicProfileComment() {
   if (!state.currentUser || !state.publicProfile) return;
+  if (typeof profileInteractionBlocked === "function" && profileInteractionBlocked(state.publicProfile)) {
+    showToast(typeof safetyLabel === "function" ? safetyLabel("cannotInteract", "Cannot interact with blocked user") : "Cannot interact with blocked user", { title: publicProfileLabel("error", "Profile error"), tone: "error" });
+    return;
+  }
   const input = E("publicProfileCommentBody");
   const body = String(input?.value || "").trim();
   if (!body) {
