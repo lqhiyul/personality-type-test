@@ -1,5 +1,14 @@
 import { expect, test } from "@playwright/test";
 
+async function answerAllFirstOptions(page) {
+  await page.locator("[data-question]").first().waitFor();
+  await page.locator("[data-question]").evaluateAll((questions) => {
+    for (const question of questions) {
+      question.querySelector(".option")?.click();
+    }
+  });
+}
+
 test("home page loads", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#quizSection")).toBeVisible();
@@ -9,10 +18,7 @@ test("home page loads", async ({ page }) => {
 test("quiz can be completed and shows a result", async ({ page }) => {
   await page.goto("/");
   await page.locator("#personName").fill("E2E Tester");
-  const count = await page.locator("[data-question]").count();
-  for (let index = 0; index < count; index += 1) {
-    await page.locator(`[data-question="${index}"] .option`).first().click();
-  }
+  await answerAllFirstOptions(page);
   await page.locator("#submitBtn").click();
   await expect(page.locator("#resultBox")).toBeVisible();
   await expect(page.locator("#resultBox")).toContainText(/E|I/);
@@ -62,10 +68,7 @@ test("localized quiz, compatibility, and result text renders cleanly", async ({ 
 
   await page.goto("/");
   await page.locator("#personName").fill("Localization Check");
-  const count = await page.locator("[data-question]").count();
-  for (let index = 0; index < count; index += 1) {
-    await page.locator(`[data-question="${index}"] .option`).first().click();
-  }
+  await answerAllFirstOptions(page);
   await page.locator("#submitBtn").click();
   await expect(page.locator("#resultBox")).toBeVisible();
 

@@ -53,11 +53,12 @@ Use `ADMIN_PASSWORD` from `.env`.
 ## Quality Gate
 
 ```bash
-go fmt ./...
-go mod tidy
+gofmt -l .
 go test ./...
 go vet ./...
-staticcheck ./...
+go run honnef.co/go/tools/cmd/staticcheck@v0.7.0 ./...
+go test ./... "-coverprofile=coverage.out"
+go tool cover "-func=coverage.out"
 npm run js-check
 ```
 
@@ -68,6 +69,8 @@ go test -race ./...
 npm run e2e
 docker build -t personality-type-test .
 ```
+
+Race tests require CGO. On Windows, use a CGO-enabled Go toolchain with a C compiler or rely on the Linux CI race job.
 
 With `make`:
 

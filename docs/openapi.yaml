@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Personality Type Test API
   version: "0.1.0"
-  description: Minimal OpenAPI contract for the main backend review paths. See docs/api.md for the complete human-readable endpoint reference.
+  description: Partial OpenAPI covering primary endpoints. See docs/api.md for the complete human-readable endpoint reference.
 servers:
   - url: http://localhost:8080
 paths:

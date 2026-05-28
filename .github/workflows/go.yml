@@ -22,6 +22,9 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Download Go modules
+        run: go mod download
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -34,11 +37,13 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Install staticcheck
-        run: go install honnef.co/go/tools/cmd/staticcheck@latest
-
       - name: Check Go formatting
-        run: test -z "$(gofmt -l .)"
+        run: |
+          files="$(gofmt -l .)"
+          if [ -n "$files" ]; then
+            echo "$files"
+            exit 1
+          fi
 
       - name: JavaScript syntax and UI encoding
         run: npm run js-check
@@ -47,13 +52,18 @@ jobs:
         run: go vet ./...
 
       - name: Staticcheck
-        run: staticcheck ./...
+        run: go run honnef.co/go/tools/cmd/staticcheck@v0.7.0 ./...
 
-      - name: Test with coverage
-        run: go test ./... -coverprofile=coverage.out
+      - name: Test
+        run: go test ./...
 
       - name: Race test
         run: go test -race ./...
+
+      - name: Coverage
+        run: |
+          go test ./... -coverprofile=coverage.out
+          go tool cover -func=coverage.out
 
       - name: Browser smoke tests
         run: npm run e2e

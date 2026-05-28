@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -15,9 +17,10 @@ func TestAPIErrorResponsesUseConsistentShape(t *testing.T) {
 		path   string
 		body   any
 		status int
+		allow  string
 	}{
 		{name: "auth me unauthorized", method: http.MethodGet, path: "/api/auth/me", status: http.StatusUnauthorized},
-		{name: "method not allowed", method: http.MethodGet, path: "/api/auth/login", status: http.StatusMethodNotAllowed},
+		{name: "method not allowed", method: http.MethodGet, path: "/api/auth/login", status: http.StatusMethodNotAllowed, allow: http.MethodPost},
 		{name: "validation error", method: http.MethodPost, path: "/api/auth/register", body: map[string]string{
 			"username": "x",
 			"email":    "bad-email",
@@ -31,6 +34,9 @@ func TestAPIErrorResponsesUseConsistentShape(t *testing.T) {
 			if rec.Code != tc.status {
 				t.Fatalf("expected status %d, got %d: %s", tc.status, rec.Code, rec.Body.String())
 			}
+			if tc.allow != "" && rec.Header().Get("Allow") != tc.allow {
+				t.Fatalf("expected Allow %q, got %q", tc.allow, rec.Header().Get("Allow"))
+			}
 			var payload map[string]string
 			if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
 				t.Fatalf("decode error response: %v", err)
@@ -39,6 +45,27 @@ func TestAPIErrorResponsesUseConsistentShape(t *testing.T) {
 				t.Fatalf("expected non-empty error field, got %+v", payload)
 			}
 		})
+	}
+}
+
+func TestMalformedJSONUsesConsistentErrorShape(t *testing.T) {
+	app := newTestApp(t)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/login", strings.NewReader(`{`))
+	req.Header.Set("Content-Type", "application/json")
+	addCSRFToRequest(app, req)
+
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected malformed JSON 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var payload map[string]string
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode error response: %v", err)
+	}
+	if payload["error"] != "invalid JSON request" {
+		t.Fatalf("expected invalid JSON error, got %+v", payload)
 	}
 }
 
