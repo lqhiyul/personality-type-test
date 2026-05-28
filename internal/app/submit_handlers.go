@@ -22,13 +22,13 @@ func (a *App) handleSubmit(w http.ResponseWriter, r *http.Request) {
 
 	var req submitRequest
 	if err := decodeJSON(r, &req); err != nil {
-		writeJSONError(w, http.StatusBadRequest, "РќРµРєРѕСЂРµРєС‚РЅРёР№ JSON Сѓ Р·Р°РїРёС‚С–")
+		writeJSONError(w, http.StatusBadRequest, "invalid JSON request")
 		return
 	}
 
 	name := strings.TrimSpace(req.Name)
 	if !validName(name) {
-		writeJSONError(w, http.StatusBadRequest, "Р†Рј'СЏ РјР°С” РјС–СЃС‚РёС‚Рё РІС–Рґ 1 РґРѕ 64 СЃРёРјРІРѕР»С–РІ")
+		writeJSONError(w, http.StatusBadRequest, "name must be 1 to 64 characters")
 		return
 	}
 
@@ -48,7 +48,7 @@ func (a *App) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		Created:  time.Now().UTC(),
 	}
 	if err := a.store.Add(result); err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "РќРµ РІРґР°Р»РѕСЃСЏ Р·Р±РµСЂРµРіС‚Рё СЂРµР·СѓР»СЊС‚Р°С‚")
+		writeJSONError(w, http.StatusInternalServerError, "could not save result")
 		return
 	}
 

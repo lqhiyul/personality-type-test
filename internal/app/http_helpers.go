@@ -44,5 +44,5 @@ func writeRateLimitError(w http.ResponseWriter, retryAfter time.Duration) {
 
 func methodNotAllowed(w http.ResponseWriter, allowed ...string) {
 	w.Header().Set("Allow", strings.Join(allowed, ", "))
-	writeJSONError(w, http.StatusMethodNotAllowed, "РњРµС‚РѕРґ РЅРµ РїС–РґС‚СЂРёРјСѓС”С‚СЊСЃСЏ")
+	writeJSONError(w, http.StatusMethodNotAllowed, "method is not allowed")
 }

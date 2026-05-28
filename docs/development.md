@@ -2,6 +2,8 @@
 
 ## First Run
 
+Prerequisites: Go 1.25+, Node.js 20+ for JS/E2E checks, and optional Docker.
+
 ```bash
 cp .env.example .env
 make run
@@ -21,9 +23,10 @@ make coverage
 make js-check
 make e2e
 make docker-build
+make full-check
 ```
 
-`make check` runs the main non-browser backend and syntax checks. `make e2e` runs Playwright smoke tests and starts a local server on port `18080`.
+`make check` runs formatting, vet, staticcheck, Go tests, build, and JS checks. `make full-check` adds race tests, coverage, Playwright smoke tests, and Docker build. `make e2e` starts a local server on port `18080`.
 
 ## Migrations
 

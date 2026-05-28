@@ -1,4 +1,4 @@
-.PHONY: fmt vet staticcheck test race coverage build run dev migrate seed js-check e2e docker-build check
+.PHONY: fmt vet staticcheck test race coverage build run dev migrate seed js-check e2e docker-build check full-check
 
 fmt:
 	go fmt ./...
@@ -17,7 +17,6 @@ race:
 
 coverage:
 	go test ./... -coverprofile=coverage.out
-	go tool cover -html=coverage.out -o coverage.html
 
 build:
 	go build ./...
@@ -42,4 +41,6 @@ e2e:
 docker-build:
 	docker build -t personality-type-test .
 
-check: fmt vet staticcheck test race coverage build js-check
+check: fmt vet staticcheck test build js-check
+
+full-check: check race coverage e2e docker-build

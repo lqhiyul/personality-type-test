@@ -30,7 +30,7 @@ func TestOpenAppDBCreatesParentDirAndRunsMigrations(t *testing.T) {
 		t.Fatalf("RunMigrations() should be idempotent: %v", err)
 	}
 
-	for _, table := range []string{"users", "user_test_results", "friendships", "profile_comments", "conversations", "conversation_participants", "messages", "user_blocks", "user_reports"} {
+	for _, table := range []string{"users", "user_test_results", "friendships", "profile_comments", "conversations", "conversation_participants", "messages", "user_blocks", "user_reports", "sessions", "admin_audit_logs"} {
 		t.Run(table, func(t *testing.T) {
 			if !sqliteObjectExists(t, db, "table", table) {
 				t.Fatalf("expected table %q to exist", table)
@@ -65,6 +65,11 @@ func TestOpenAppDBCreatesParentDirAndRunsMigrations(t *testing.T) {
 		"idx_user_reports_status_created_at",
 		"idx_user_reports_reporter",
 		"idx_user_reports_target",
+		"idx_sessions_token_hash",
+		"idx_sessions_kind_user_id",
+		"idx_sessions_expiry",
+		"idx_admin_audit_logs_action_created_at",
+		"idx_admin_audit_logs_target",
 	} {
 		t.Run(index, func(t *testing.T) {
 			if !sqliteObjectExists(t, db, "index", index) {

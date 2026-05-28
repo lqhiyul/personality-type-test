@@ -227,6 +227,9 @@ func TestReportsAPIAndAdminReview(t *testing.T) {
 	if !strings.Contains(update.Body.String(), `"status":"reviewed"`) {
 		t.Fatalf("expected reviewed status in update response, got %s", update.Body.String())
 	}
+	if got := countAdminAuditAction(t, app, "admin_update_report_status"); got != 1 {
+		t.Fatalf("expected one admin report status audit row, got %d", got)
+	}
 }
 
 func assertNoPrivateSafetyData(t *testing.T, body string) {

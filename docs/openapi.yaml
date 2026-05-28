@@ -1,0 +1,461 @@
+openapi: 3.0.3
+info:
+  title: Personality Type Test API
+  version: "0.1.0"
+  description: Minimal OpenAPI contract for the main backend review paths. See docs/api.md for the complete human-readable endpoint reference.
+servers:
+  - url: http://localhost:8080
+paths:
+  /healthz:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+  /api/submit:
+    post:
+      summary: Submit quiz answers
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitRequest"
+      responses:
+        "200":
+          description: Result profile and stored anonymous result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: INTJ
+                  savedToAccount:
+                    type: boolean
+                  result:
+                    $ref: "#/components/schemas/AnonymousResult"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+  /api/auth/register:
+    post:
+      summary: Register user
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User created and session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/auth/login:
+    post:
+      summary: User login
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLoginRequest"
+      responses:
+        "200":
+          description: User session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+  /api/auth/logout:
+    post:
+      summary: User logout
+      security:
+        - userSession: []
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+  /api/auth/me:
+    get:
+      summary: Current user
+      security:
+        - userSession: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/me/results:
+    get:
+      summary: List current user's saved quiz results
+      security:
+        - userSession: []
+      responses:
+        "200":
+          description: Saved results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SavedResult"
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/me/results/{id}/primary:
+    post:
+      summary: Set current user's primary result
+      security:
+        - userSession: []
+      parameters:
+        - $ref: "#/components/parameters/ResultID"
+        - $ref: "#/components/parameters/CSRFToken"
+      responses:
+        "200":
+          description: Updated saved result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedResult"
+        "404":
+          $ref: "#/components/responses/Error"
+  /api/friends/request:
+    post:
+      summary: Send friend request
+      security:
+        - userSession: []
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username]
+              properties:
+                username:
+                  type: string
+      responses:
+        "201":
+          description: Friendship created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Friendship"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /api/friends:
+    get:
+      summary: List accepted friends with compatibility summary
+      security:
+        - userSession: []
+      responses:
+        "200":
+          description: Friends
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  friends:
+                    type: array
+                    items:
+                      type: object
+  /api/login:
+    post:
+      summary: Admin login
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "401":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/Error"
+  /api/results:
+    get:
+      summary: Admin list anonymous quiz results
+      security:
+        - adminSession: []
+      responses:
+        "200":
+          description: Anonymous results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AnonymousResult"
+        "401":
+          $ref: "#/components/responses/Error"
+    delete:
+      summary: Admin clear anonymous quiz results
+      security:
+        - adminSession: []
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/results/export:
+    get:
+      summary: Admin export anonymous quiz results as CSV or JSON
+      security:
+        - adminSession: []
+      parameters:
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [csv, json]
+      responses:
+        "200":
+          description: CSV attachment by default or JSON when format=json
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/stats:
+    get:
+      summary: Admin result statistics
+      security:
+        - adminSession: []
+      responses:
+        "200":
+          description: Aggregate stats
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          $ref: "#/components/responses/Error"
+  /api/admin/reports:
+    get:
+      summary: Admin list safety reports
+      security:
+        - adminSession: []
+      responses:
+        "200":
+          description: Reports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reports:
+                    type: array
+                    items:
+                      type: object
+        "401":
+          $ref: "#/components/responses/Error"
+components:
+  securitySchemes:
+    userSession:
+      type: apiKey
+      in: cookie
+      name: mbti_user_session
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: mbti_admin_session
+  parameters:
+    CSRFToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Required for unsafe methods. Must match the csrf_token cookie.
+    ResultID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  responses:
+    Error:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    OK:
+      description: OK response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ok:
+                type: boolean
+                example: true
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    SubmitRequest:
+      type: object
+      required: [name, answers, duration]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        answers:
+          type: array
+          minItems: 28
+          maxItems: 28
+          items:
+            type: string
+            enum: [E, I, S, N, T, F, J, P]
+        duration:
+          type: integer
+          minimum: 0
+    RegisterRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 32
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+    UserLoginRequest:
+      type: object
+      required: [emailOrUsername, password]
+      properties:
+        emailOrUsername:
+          type: string
+        password:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+        bio:
+          type: string
+        avatarKey:
+          type: string
+        profileVisibility:
+          type: string
+          enum: [public, private]
+        showPrimaryResult:
+          type: boolean
+        showCompletedCount:
+          type: boolean
+        showFriends:
+          type: boolean
+    SavedResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        mbtiType:
+          type: string
+        durationSeconds:
+          type: integer
+        isPrimary:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    AnonymousResult:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        answers:
+          type: string
+        duration:
+          type: integer
+        created:
+          type: string
+          format: date-time
+    Friendship:
+      type: object
+      properties:
+        id:
+          type: integer
+        requesterId:
+          type: integer
+        addresseeId:
+          type: integer
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
