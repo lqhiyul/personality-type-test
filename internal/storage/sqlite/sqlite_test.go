@@ -59,10 +59,41 @@ func TestRunMigrationsRecordsAppliedVersionsAndIsIdempotent(t *testing.T) {
 	if count != len(migrations) {
 		t.Fatalf("expected %d applied migrations, got %d", len(migrations), count)
 	}
-	for _, table := range []string{"users", "user_test_results", "friendships", "profile_comments", "conversations", "conversation_participants", "messages", "user_blocks", "user_reports", "sessions"} {
+	for _, table := range []string{"users", "user_test_results", "friendships", "profile_comments", "conversations", "conversation_participants", "messages", "user_blocks", "user_reports", "sessions", "admin_audit_logs"} {
 		if !sqliteObjectExists(t, db, "table", table) {
 			t.Fatalf("expected table %q to exist", table)
 		}
+	}
+
+	now := "2026-05-28T10:00:00Z"
+	result, err := db.ExecContext(ctx, `
+		INSERT INTO users (username, email, password_hash, display_name, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, "migration_user", "migration@example.com", "hash", "Migration User", now, now)
+	if err != nil {
+		t.Fatalf("insert user after migrations: %v", err)
+	}
+	userID, err := result.LastInsertId()
+	if err != nil {
+		t.Fatalf("read inserted user id: %v", err)
+	}
+	if _, err := db.ExecContext(ctx, `
+		INSERT INTO user_test_results (user_id, mbti_type, scores_json, answers_json, duration_seconds, is_primary, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, userID, "INTJ", "{}", "[]", 180, 1, now); err != nil {
+		t.Fatalf("insert user result after migrations: %v", err)
+	}
+	if _, err := db.ExecContext(ctx, `
+		INSERT INTO sessions (kind, token_hash, user_id, created_at, expires_at)
+		VALUES (?, ?, ?, ?, ?)
+	`, "user", "token-hash", userID, now, now); err != nil {
+		t.Fatalf("insert user session after migrations: %v", err)
+	}
+	if _, err := db.ExecContext(ctx, `
+		INSERT INTO admin_audit_logs (action, target_type, target_id, ip, user_agent, created_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, "admin_login_success", "result", "one", "127.0.0.1", "test", now); err != nil {
+		t.Fatalf("insert admin audit log after migrations: %v", err)
 	}
 }
 

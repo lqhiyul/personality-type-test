@@ -12,6 +12,15 @@ docker run --rm -p 8080:8080 \
 
 Mount persistent storage for `/app/data` in real deployments.
 
+## Docker Compose
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+The compose file maps `8080:8080` and stores `/app/data` in a named volume.
+
 ## Environment
 
 - `HOST`, `PORT`, or `ADDR`: bind address.
@@ -33,6 +42,7 @@ Mount persistent storage for `/app/data` in real deployments.
 - Do not use local seed data.
 - Configure trusted proxy CIDRs only for infrastructure you control.
 - Review logs for request IDs, status codes, and unexpected auth failures.
+- Review `admin_audit_logs` for admin login/export/delete/report-review actions.
 - Rotate secrets if anything sensitive is committed or exposed.
 
 ## Known Deployment Limitation

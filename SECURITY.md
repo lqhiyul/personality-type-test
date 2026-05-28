@@ -10,4 +10,4 @@ Please open a private security advisory if available, or contact the repository 
 
 ## Scope
 
-This app is not a clinical or psychological assessment product. It is a small full-stack demo with cookie-based auth, CSRF protection, SQLite-backed sessions, rate limiting, and a demo admin password model.
+This app is not a clinical or psychological assessment product. It is a small full-stack demo with cookie-based auth, CSRF protection, SQLite-backed sessions, rate limiting, admin audit logs, and a demo admin password model.

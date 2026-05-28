@@ -28,13 +28,13 @@ func (a *App) handleStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !a.authorized(r) {
-		writeJSONError(w, http.StatusUnauthorized, "РџРѕС‚СЂС–Р±РЅРѕ СѓРІС–Р№С‚Рё")
+		writeJSONError(w, http.StatusUnauthorized, "admin authentication required")
 		return
 	}
 
 	results, err := a.store.All()
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "РќРµ РІРґР°Р»РѕСЃСЏ РїСЂРѕС‡РёС‚Р°С‚Рё СЃС‚Р°С‚РёСЃС‚РёРєСѓ")
+		writeJSONError(w, http.StatusInternalServerError, "could not read statistics")
 		return
 	}
 	writeJSON(w, http.StatusOK, buildStats(results))

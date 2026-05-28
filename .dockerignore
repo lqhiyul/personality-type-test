@@ -18,6 +18,7 @@ test-results/
 *.json.tmp
 coverage.out
 coverage.html
+coverage
 
 .env
 .env.local

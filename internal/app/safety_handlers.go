@@ -279,6 +279,7 @@ func (a *App) handleAdminReportByID(w http.ResponseWriter, r *http.Request) {
 		writeReportError(w, err)
 		return
 	}
+	a.recordAdminAudit(r, "admin_update_report_status", "report", strconv.FormatInt(report.ID, 10))
 	writeJSON(w, http.StatusOK, newReportResponse(report, true))
 }
 

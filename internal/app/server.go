@@ -54,6 +54,7 @@ func New(ctx context.Context, opts Options) (*App, func() error, error) {
 		loginLimiter:     newLoginRateLimiter(defaultLoginFailureLimit, defaultLoginCooldown),
 		userLoginLimiter: newLoginRateLimiter(defaultLoginFailureLimit, defaultLoginCooldown),
 		sessionStore:     sessions.NewStore(db),
+		auditStore:       NewAdminAuditStore(db),
 		trustedProxies:   trustedProxies,
 	}
 

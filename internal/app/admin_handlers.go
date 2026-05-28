@@ -25,22 +25,26 @@ func (a *App) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	var req loginRequest
 	if err := decodeJSON(r, &req); err != nil {
-		writeJSONError(w, http.StatusBadRequest, "РќРµРєРѕСЂРµРєС‚РЅРёР№ JSON Сѓ Р·Р°РїРёС‚С–")
+		a.recordAdminAudit(r, "admin_login_invalid_json", "", "")
+		writeJSONError(w, http.StatusBadRequest, "invalid JSON request")
 		return
 	}
 
 	limitKey := a.loginRateLimitKey(r)
 	if retryAfter, ok := a.loginLimiter.allow(limitKey); !ok {
+		a.recordAdminAudit(r, "admin_login_rate_limited", "", "")
 		writeRateLimitError(w, retryAfter)
 		return
 	}
 
 	if !subtleCompare(req.Password, a.adminPassword) {
 		if retryAfter, limited := a.loginLimiter.recordFailure(limitKey); limited {
+			a.recordAdminAudit(r, "admin_login_rate_limited", "", "")
 			writeRateLimitError(w, retryAfter)
 			return
 		}
-		writeJSONError(w, http.StatusUnauthorized, "РќРµРІС–СЂРЅРёР№ РїР°СЂРѕР»СЊ")
+		a.recordAdminAudit(r, "admin_login_failure", "", "")
+		writeJSONError(w, http.StatusUnauthorized, "invalid admin password")
 		return
 	}
 
@@ -51,6 +55,7 @@ func (a *App) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	setAdminCookie(w, a.sessionName, token, a.cookieSecure, int(sessionTTL.Seconds()))
+	a.recordAdminAudit(r, "admin_login_success", "", "")
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -65,12 +70,13 @@ func (a *App) handleLogout(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	setAdminCookie(w, a.sessionName, "", a.cookieSecure, -1)
+	a.recordAdminAudit(r, "admin_logout", "", "")
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 func (a *App) handleResults(w http.ResponseWriter, r *http.Request) {
 	if !a.authorized(r) {
-		writeJSONError(w, http.StatusUnauthorized, "РџРѕС‚СЂС–Р±РЅРѕ СѓРІС–Р№С‚Рё")
+		writeJSONError(w, http.StatusUnauthorized, "admin authentication required")
 		return
 	}
 
@@ -78,16 +84,17 @@ func (a *App) handleResults(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		results, err := a.store.All()
 		if err != nil {
-			writeJSONError(w, http.StatusInternalServerError, "РќРµ РІРґР°Р»РѕСЃСЏ РїСЂРѕС‡РёС‚Р°С‚Рё СЂРµР·СѓР»СЊС‚Р°С‚Рё")
+			writeJSONError(w, http.StatusInternalServerError, "could not read results")
 			return
 		}
 		sortResults(results)
 		writeJSON(w, http.StatusOK, map[string]any{"results": results})
 	case http.MethodDelete:
 		if err := a.store.Clear(); err != nil {
-			writeJSONError(w, http.StatusInternalServerError, "РќРµ РІРґР°Р»РѕСЃСЏ РѕС‡РёСЃС‚РёС‚Рё СЂРµР·СѓР»СЊС‚Р°С‚Рё")
+			writeJSONError(w, http.StatusInternalServerError, "could not clear results")
 			return
 		}
+		a.recordAdminAudit(r, "admin_clear_results", "result", "*")
 		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 	default:
 		methodNotAllowed(w, http.MethodGet, http.MethodDelete)
@@ -100,24 +107,25 @@ func (a *App) handleResultByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !a.authorized(r) {
-		writeJSONError(w, http.StatusUnauthorized, "РџРѕС‚СЂС–Р±РЅРѕ СѓРІС–Р№С‚Рё")
+		writeJSONError(w, http.StatusUnauthorized, "admin authentication required")
 		return
 	}
 
 	id := strings.TrimPrefix(r.URL.Path, "/api/results/")
 	id = strings.TrimSpace(id)
 	if id == "" || strings.Contains(id, "/") {
-		writeJSONError(w, http.StatusBadRequest, "РќРµРєРѕСЂРµРєС‚РЅРёР№ ID СЂРµР·СѓР»СЊС‚Р°С‚Сѓ")
+		writeJSONError(w, http.StatusBadRequest, "invalid result id")
 		return
 	}
 	if err := a.store.DeleteByID(id); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			writeJSONError(w, http.StatusNotFound, "Р РµР·СѓР»СЊС‚Р°С‚ РЅРµ Р·РЅР°Р№РґРµРЅРѕ")
+			writeJSONError(w, http.StatusNotFound, "result not found")
 			return
 		}
-		writeJSONError(w, http.StatusInternalServerError, "РќРµ РІРґР°Р»РѕСЃСЏ РІРёРґР°Р»РёС‚Рё СЂРµР·СѓР»СЊС‚Р°С‚")
+		writeJSONError(w, http.StatusInternalServerError, "could not delete result")
 		return
 	}
+	a.recordAdminAudit(r, "admin_delete_result", "result", id)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -127,18 +135,19 @@ func (a *App) handleExportResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !a.authorized(r) {
-		writeJSONError(w, http.StatusUnauthorized, "РџРѕС‚СЂС–Р±РЅРѕ СѓРІС–Р№С‚Рё")
+		writeJSONError(w, http.StatusUnauthorized, "admin authentication required")
 		return
 	}
 
 	results, err := a.store.All()
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "РќРµ РІРґР°Р»РѕСЃСЏ РїСЂРѕС‡РёС‚Р°С‚Рё СЂРµР·СѓР»СЊС‚Р°С‚Рё")
+		writeJSONError(w, http.StatusInternalServerError, "could not read results")
 		return
 	}
 	sortResults(results)
 
 	if strings.EqualFold(r.URL.Query().Get("format"), "json") {
+		a.recordAdminAudit(r, "admin_export_results", "result", "json")
 		w.Header().Set("Content-Disposition", `attachment; filename="mbti-results.json"`)
 		writeJSON(w, http.StatusOK, map[string]any{
 			"results":     results,
@@ -147,6 +156,7 @@ func (a *App) handleExportResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	a.recordAdminAudit(r, "admin_export_results", "result", "csv")
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", `attachment; filename="mbti-results.csv"`)
 	writer := csv.NewWriter(w)

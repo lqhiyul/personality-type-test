@@ -43,6 +43,7 @@ func newTestApp(t *testing.T) *App {
 		loginLimiter:     newLoginRateLimiter(defaultLoginFailureLimit, defaultLoginCooldown),
 		userLoginLimiter: newLoginRateLimiter(defaultLoginFailureLimit, defaultLoginCooldown),
 		sessionStore:     sessions.NewStore(db),
+		auditStore:       NewAdminAuditStore(db),
 	}
 }
 
@@ -130,6 +131,15 @@ func addStoredResult(t *testing.T, app *App, id, code string) {
 	if err := app.store.Add(Result{ID: id, Name: "Yehor", Type: code, Answers: strings.Join(answersForType(code), "")}); err != nil {
 		t.Fatalf("store.Add() error = %v", err)
 	}
+}
+
+func countAdminAuditAction(t *testing.T, app *App, action string) int {
+	t.Helper()
+	var count int
+	if err := app.auditStore.db.QueryRow(`SELECT COUNT(*) FROM admin_audit_logs WHERE action = ?`, action).Scan(&count); err != nil {
+		t.Fatalf("count admin audit action %q: %v", action, err)
+	}
+	return count
 }
 
 func TestComputeProfileBreakdown(t *testing.T) {
@@ -304,6 +314,12 @@ func TestAdminLoginSuccessAndFailure(t *testing.T) {
 	if len(success.Result().Cookies()) == 0 {
 		t.Fatal("expected successful login to set a session cookie")
 	}
+	if got := countAdminAuditAction(t, app, "admin_login_failure"); got != 1 {
+		t.Fatalf("expected one failed admin login audit row, got %d", got)
+	}
+	if got := countAdminAuditAction(t, app, "admin_login_success"); got != 1 {
+		t.Fatalf("expected one successful admin login audit row, got %d", got)
+	}
 }
 
 func TestAdminLoginRateLimitDoesNotBlockOtherRoutes(t *testing.T) {
@@ -377,10 +393,16 @@ func TestAdminJSONExportDeleteAndClear(t *testing.T) {
 	if len(exported.Results) != 2 {
 		t.Fatalf("expected two exported results, got %d", len(exported.Results))
 	}
+	if got := countAdminAuditAction(t, app, "admin_export_results"); got != 1 {
+		t.Fatalf("expected one admin export audit row, got %d", got)
+	}
 
 	deleteRec := performJSON(app, http.MethodDelete, "/api/results/one", nil, cookies...)
 	if deleteRec.Code != http.StatusOK {
 		t.Fatalf("expected delete one 200, got %d", deleteRec.Code)
+	}
+	if got := countAdminAuditAction(t, app, "admin_delete_result"); got != 1 {
+		t.Fatalf("expected one admin delete audit row, got %d", got)
 	}
 	results, _ := app.store.All()
 	if len(results) != 1 || results[0].ID != "two" {
@@ -390,6 +412,9 @@ func TestAdminJSONExportDeleteAndClear(t *testing.T) {
 	clearRec := performJSON(app, http.MethodDelete, "/api/results", nil, cookies...)
 	if clearRec.Code != http.StatusOK {
 		t.Fatalf("expected clear 200, got %d", clearRec.Code)
+	}
+	if got := countAdminAuditAction(t, app, "admin_clear_results"); got != 1 {
+		t.Fatalf("expected one admin clear audit row, got %d", got)
 	}
 	results, _ = app.store.All()
 	if len(results) != 0 {
