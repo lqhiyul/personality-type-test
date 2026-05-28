@@ -81,7 +81,8 @@ Prerequisites:
 - Go 1.25+
 - Node.js 20+ for JS checks/E2E
 - Docker optional
-- `staticcheck` optional locally, installed by CI
+- `staticcheck` is run through a pinned `go run` command in CI/Makefile; a global install is optional
+- Race tests require a CGO-enabled Go toolchain
 
 Run locally:
 
@@ -114,6 +115,8 @@ go run ./cmd/migrate
 go run ./cmd/seed
 go test ./...
 go test -race ./...
+go test ./... "-coverprofile=coverage.out"
+go tool cover "-func=coverage.out"
 npm run js-check
 npm run e2e
 ```
@@ -138,7 +141,7 @@ make check
 make full-check
 ```
 
-`make check` runs the regular local quality gate. `make full-check` also runs race tests, coverage, Playwright E2E, and Docker build.
+`make check` runs the regular local quality gate without rewriting files. `make full-check` also runs race tests, coverage, Playwright E2E, and Docker build. Docker checks require a running Docker daemon.
 
 Install Playwright browsers once before local E2E runs:
 
@@ -202,7 +205,7 @@ See [docs/security.md](docs/security.md) and [docs/deployment.md](docs/deploymen
 ## API Documentation
 
 - Human-readable contract: [docs/api.md](docs/api.md)
-- Minimal OpenAPI contract for the main review paths: [docs/openapi.yaml](docs/openapi.yaml)
+- Partial OpenAPI contract covering primary review paths: [docs/openapi.yaml](docs/openapi.yaml)
 
 The API uses a consistent error shape:
 
@@ -220,6 +223,7 @@ The API uses a consistent error shape:
 - MBTI-style output is educational/entertainment content, not clinical or medical guidance.
 - Observability is limited to request logs, request IDs, tests, and CI; there are no metrics/traces dashboards.
 - `docs/openapi.yaml` is intentionally focused on primary review endpoints; `docs/api.md` is the more complete endpoint reference.
+- Local `go test -race ./...` requires CGO. On Windows, install a C toolchain and enable CGO or rely on the Linux CI race job.
 
 ## Repository Notes
 
@@ -229,3 +233,4 @@ The API uses a consistent error shape:
 - Reviewer guide: [docs/reviewer-guide.md](docs/reviewer-guide.md)
 - Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
+- Release checklist: [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)

@@ -2,7 +2,7 @@
 
 ## First Run
 
-Prerequisites: Go 1.25+, Node.js 20+ for JS/E2E checks, and optional Docker.
+Prerequisites: Go 1.25+, Node.js 20+ for JS/E2E checks, and optional Docker. Race tests require a CGO-enabled Go toolchain.
 
 ```bash
 cp .env.example .env
@@ -26,7 +26,14 @@ make docker-build
 make full-check
 ```
 
-`make check` runs formatting, vet, staticcheck, Go tests, build, and JS checks. `make full-check` adds race tests, coverage, Playwright smoke tests, and Docker build. `make e2e` starts a local server on port `18080`.
+`make check` runs `fmt-check`, vet, pinned staticcheck, Go tests, build, and JS checks. `make full-check` adds race tests, coverage, Playwright smoke tests, and Docker build. `make e2e` starts a local server on port `18080`.
+
+For direct coverage commands in PowerShell, keep the flags quoted:
+
+```powershell
+go test ./... "-coverprofile=coverage.out"
+go tool cover "-func=coverage.out"
+```
 
 ## Migrations
 
