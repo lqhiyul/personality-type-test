@@ -48,7 +48,7 @@ Health check.
 
 ### `POST /api/submit`
 
-Submits quiz answers. If the request has a valid user session, the result is also saved to that user account.
+Submits weighted slider quiz answers. If the request has a valid user session, the result is also saved to that user account.
 
 - Auth: public, optionally user session
 - CSRF: yes
@@ -59,14 +59,16 @@ Request:
 {
   "name": "Yehor",
   "answers": [
-    "I", "I", "I", "I", "I", "I", "I",
-    "N", "N", "N", "N", "N", "N", "N",
-    "T", "T", "T", "T", "T", "T", "T",
-    "J", "J", "J", "J", "J", "J", "J"
+    100, 100, 100, 100, 100, 100, 100,
+    100, 100, 100, 100, 100, 100, 100,
+    0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0
   ],
   "duration": 180
 }
 ```
+
+`answers` must contain exactly 28 integers. Each value distributes 100 points between the question's left and right poles: `0` means full left preference, `50` means balance, and `100` means full right preference. The backend owns the question-to-dimension mapping and calculates the weighted score.
 
 Success `200`:
 
@@ -74,13 +76,32 @@ Success `200`:
 {
   "type": "INTJ",
   "profile": {
-    "type": "INTJ"
+    "type": "INTJ",
+    "code": "INTJ",
+    "dimensions": [
+      {
+        "key": "EI",
+        "label": "Energy",
+        "leftCode": "E",
+        "leftLabel": "Extraversion",
+        "leftScore": 0,
+        "leftPercent": 0,
+        "rightCode": "I",
+        "rightLabel": "Introversion",
+        "rightScore": 700,
+        "rightPercent": 100,
+        "winner": "I",
+        "percent": 100,
+        "margin": 100,
+        "balanceLevel": "strong"
+      }
+    ]
   },
   "result": {
     "id": "b8e81824f40d",
     "name": "Yehor",
     "type": "INTJ",
-    "answers": "IIIIIIINNNNNNNTTTTTTTJJJJJJJ",
+    "answers": "100,100,100,100,100,100,100,100,100,100,100,100,100,100,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
     "duration": 180,
     "created": "2026-05-28T10:00:00Z"
   },
@@ -93,6 +114,7 @@ Common errors:
 - `400 {"error":"invalid JSON request"}`
 - `400 {"error":"name must be 1 to 64 characters"}`
 - `400 {"error":"expected 28 answers"}`
+- `400 {"error":"answer 1 must be between 0 and 100"}`
 - `403 {"error":"csrf token is missing or invalid"}`
 - `500 {"error":"could not save result"}`
 
@@ -849,7 +871,7 @@ Success `200`:
       "id": "b8e81824f40d",
       "name": "Yehor",
       "type": "INTJ",
-      "answers": "IIIIIIINNNNNNNTTTTTTTJJJJJJJ",
+      "answers": "100,100,100,100,100,100,100,100,100,100,100,100,100,100,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
       "duration": 180,
       "created": "2026-05-28T10:00:00Z"
     }

@@ -1,4 +1,7 @@
-const DRAFT_KEY = "personality-test-draft:v3";
+const DRAFT_KEY = "personality-test-draft:v4";
+const SLIDER_MIN = 0;
+const SLIDER_MAX = 100;
+const SLIDER_CENTER = 50;
 const LANG_KEY = "personality-test-language";
 const TELEGRAM_URL = "https://t.me/+H1RfT8lJFYA0MDI6";
 const LANGS = ["uk", "ru", "en"];

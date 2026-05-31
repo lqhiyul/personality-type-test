@@ -74,8 +74,8 @@ func TestLoggedInSubmitCreatesUserTestResult(t *testing.T) {
 	if len(response.SavedResult.Scores) == 0 {
 		t.Fatal("expected saved result response to include scores")
 	}
-	if len(response.SavedResult.Answers) != len(questions) {
-		t.Fatalf("expected saved answers in response, got %d", len(response.SavedResult.Answers))
+	if got := unmarshalAnswerValuesForTest(t, response.SavedResult.Answers); len(got) != len(questions) {
+		t.Fatalf("expected saved answers in response, got %d", len(got))
 	}
 
 	storedResults, err := app.userStore.ListUserTestResults(context.Background(), user.ID)
@@ -92,8 +92,8 @@ func TestLoggedInSubmitCreatesUserTestResult(t *testing.T) {
 	if !strings.Contains(stored.ScoresJSON, `"winner":"I"`) {
 		t.Fatalf("expected scores JSON to contain dimension winners, got %s", stored.ScoresJSON)
 	}
-	if !strings.Contains(stored.AnswersJSON, `"I"`) {
-		t.Fatalf("expected answers JSON to contain normalized answers, got %s", stored.AnswersJSON)
+	if !strings.Contains(stored.AnswersJSON, `100`) {
+		t.Fatalf("expected answers JSON to contain slider answers, got %s", stored.AnswersJSON)
 	}
 
 	jsonResults, err := app.store.All()
@@ -132,8 +132,8 @@ func TestMyResultsEndpointsRequireAuthAndScopeByUser(t *testing.T) {
 	if len(firstResponse.Results) != 1 || firstResponse.Results[0].ID != firstResult.ID || firstResponse.Results[0].ID == secondResult.ID {
 		t.Fatalf("expected only first user's result, got %+v", firstResponse.Results)
 	}
-	if len(firstResponse.Results[0].Answers) != len(questions) {
-		t.Fatalf("expected private result answers for owner, got %d", len(firstResponse.Results[0].Answers))
+	if got := unmarshalAnswerValuesForTest(t, firstResponse.Results[0].Answers); len(got) != len(questions) {
+		t.Fatalf("expected private result answers for owner, got %d", len(got))
 	}
 
 	listSecond := performJSON(app, http.MethodGet, "/api/me/results", nil, secondCookie)
@@ -255,13 +255,22 @@ func createUserResultForTest(t *testing.T, app *App, userID int64, mbtiType stri
 	return result
 }
 
-func marshalAnswersForTest(t *testing.T, answers []string) string {
+func marshalAnswersForTest(t *testing.T, answers []int) string {
 	t.Helper()
 	data, err := json.Marshal(answers)
 	if err != nil {
 		t.Fatalf("marshal answers: %v", err)
 	}
 	return string(data)
+}
+
+func unmarshalAnswerValuesForTest(t *testing.T, raw json.RawMessage) []int {
+	t.Helper()
+	var answers []int
+	if err := json.Unmarshal(raw, &answers); err != nil {
+		t.Fatalf("unmarshal answers: %v", err)
+	}
+	return answers
 }
 
 func countUserTestResults(t *testing.T, app *App) int {

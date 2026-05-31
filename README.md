@@ -67,7 +67,8 @@ The only server entrypoint is `cmd/server/main.go`; there is no duplicate root `
 
 ## Features
 
-- 28-question MBTI-style quiz with result breakdown and localized frontend content.
+- 28-question MBTI-style quiz with weighted slider answers, result breakdown, and localized frontend content.
+- Each answer distributes 100 points between two personality poles, so results show both the final type and the strength or balance of every dimension.
 - Anonymous result submission to JSON storage.
 - User accounts with saved result history, primary result selection, and public profile controls.
 - Public profiles, profile comments, friends, compatibility, private conversations, blocks, and reports.

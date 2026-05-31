@@ -19,7 +19,7 @@ func TestStoreAddAndDeletePersist(t *testing.T) {
 		ID:       "one",
 		Name:     "First",
 		Type:     "INTJ",
-		Answers:  "EIEEIIISSNNSNSTFTTFTFPJPPJPP",
+		Answers:  "100,0,100,0,50,75,25,100,100,50,0,25,75,100,0,0,25,50,75,100,0,0,25,50,75,100,0,50",
 		Duration: 30,
 		Created:  time.Unix(100, 0).UTC(),
 	}
@@ -27,7 +27,7 @@ func TestStoreAddAndDeletePersist(t *testing.T) {
 		ID:       "two",
 		Name:     "Second",
 		Type:     "INFJ",
-		Answers:  "IIIIIIISNNNNSSFTFTFTJJPJJPJ",
+		Answers:  "100,100,100,100,100,100,100,0,100,100,100,100,0,0,100,0,100,0,100,0,100,0,0,100,0,0,100,0",
 		Duration: 45,
 		Created:  time.Unix(200, 0).UTC(),
 	}
