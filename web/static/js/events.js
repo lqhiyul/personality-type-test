@@ -47,18 +47,19 @@ function wireEvents() {
   });
 
   E("quizForm")?.addEventListener("click", (event) => {
-    const button = event.target instanceof Element ? event.target.closest(".option") : null;
+    const button = event.target instanceof Element ? event.target.closest("[data-confirm-center]") : null;
     if (!button) return;
-    const index = Number(button.dataset.q);
-    const value = button.dataset.value || null;
-    state.answers[index] = value;
-    updateAnswerSelection(index, value);
-    updateProgress();
+    const index = Number(button.dataset.confirmCenter);
+    setSliderAnswer(index, SLIDER_CENTER);
     button.focus({ preventScroll: true });
   });
 
   document.addEventListener("input", (event) => {
     const target = event.target instanceof HTMLInputElement ? event.target : null;
+    if (target?.classList.contains("slider-input")) {
+      setSliderAnswer(Number(target.dataset.q), Number(target.value));
+      return;
+    }
     if (target?.id !== "typeSearch") return;
     state.typeSearch = target.value;
     const selection = target.selectionStart || target.value.length;

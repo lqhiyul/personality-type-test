@@ -1,8 +1,8 @@
 function demoAnswersForType(typeCode) {
   return questions().map((question) => {
-    if (typeCode.includes(question.codeLeft)) return question.codeLeft;
-    if (typeCode.includes(question.codeRight)) return question.codeRight;
-    return question.codeLeft;
+    if (typeCode.includes(question.codeLeft)) return SLIDER_MIN;
+    if (typeCode.includes(question.codeRight)) return SLIDER_MAX;
+    return SLIDER_CENTER;
   });
 }
 
@@ -14,20 +14,36 @@ function demoProfileFromAnswers(answers) {
     { key: "JP", leftCode: "J", rightCode: "P" },
   ];
   return {
+    type: "",
+    code: "",
     dimensions: axes.map((axis) => {
-      const axisAnswers = answers.filter((answer, index) => QUESTION_METADATA[index]?.axis === axis.key && answer);
-      const leftScore = axisAnswers.filter((answer) => answer === axis.leftCode).length;
-      const rightScore = axisAnswers.filter((answer) => answer === axis.rightCode).length;
+      const axisAnswers = answers
+        .map(answerStateFromEntry)
+        .filter((answer, index) => QUESTION_METADATA[index]?.axis === axis.key && answer.touched);
+      const leftScore = axisAnswers.reduce((total, answer) => total + (SLIDER_MAX - answer.value), 0);
+      const rightScore = axisAnswers.reduce((total, answer) => total + answer.value, 0);
       const total = Math.max(1, leftScore + rightScore);
+      const leftPercent = Math.round((leftScore / total) * 100);
+      const rightPercent = Math.round((rightScore / total) * 100);
       const winner = rightScore > leftScore ? axis.rightCode : axis.leftCode;
+      const percent = Math.max(leftPercent, rightPercent);
+      const margin = Math.abs(leftPercent - rightPercent);
+      const labels = getContent().dimensions?.[axis.key] || {};
       return {
         key: axis.key,
+        label: labels.label || axis.key,
         leftCode: axis.leftCode,
+        leftLabel: labels.left || axis.leftCode,
         rightCode: axis.rightCode,
+        rightLabel: labels.right || axis.rightCode,
         leftScore,
+        leftPercent,
         rightScore,
+        rightPercent,
         winner,
-        percent: Math.round((Math.max(leftScore, rightScore) / total) * 100),
+        percent,
+        margin,
+        balanceLevel: margin <= 5 ? "balanced" : (margin <= 15 ? "slight" : (margin <= 30 ? "moderate" : "strong")),
       };
     }),
   };
@@ -78,7 +94,7 @@ async function runDemoAutopass() {
   const reduced = prefersReducedMotion();
   for (let index = 0; index < answers.length; index += 1) {
     if (state.demoRunId !== runId) return;
-    state.answers[index] = answers[index];
+    state.answers[index] = { value: answers[index], touched: true };
     updateAnswerSelection(index, answers[index]);
     updateProgress({ persist: false });
     const question = document.querySelector(`.question[data-question="${index}"]`);

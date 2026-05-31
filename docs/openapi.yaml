@@ -39,6 +39,8 @@ paths:
                   type:
                     type: string
                     example: INTJ
+                  profile:
+                    $ref: "#/components/schemas/TypeProfile"
                   savedToAccount:
                     type: boolean
                   result:
@@ -359,12 +361,74 @@ components:
           type: array
           minItems: 28
           maxItems: 28
+          description: Slider values where 0 is full left preference, 50 is balanced, and 100 is full right preference.
           items:
-            type: string
-            enum: [E, I, S, N, T, F, J, P]
+            type: integer
+            minimum: 0
+            maximum: 100
+          example: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         duration:
           type: integer
           minimum: 0
+    TypeProfile:
+      type: object
+      properties:
+        type:
+          type: string
+          example: INTJ
+        code:
+          type: string
+          example: INTJ
+        dimensions:
+          type: array
+          items:
+            $ref: "#/components/schemas/DimensionScore"
+    DimensionScore:
+      type: object
+      properties:
+        key:
+          type: string
+          example: EI
+        label:
+          type: string
+          example: Energy
+        leftCode:
+          type: string
+          example: E
+        leftLabel:
+          type: string
+          example: Extraversion
+        leftScore:
+          type: integer
+          example: 315
+        leftPercent:
+          type: integer
+          example: 45
+        rightCode:
+          type: string
+          example: I
+        rightLabel:
+          type: string
+          example: Introversion
+        rightScore:
+          type: integer
+          example: 385
+        rightPercent:
+          type: integer
+          example: 55
+        winner:
+          type: string
+          example: I
+        percent:
+          type: integer
+          example: 55
+        margin:
+          type: integer
+          example: 10
+        balanceLevel:
+          type: string
+          enum: [balanced, slight, moderate, strong]
+          example: slight
     RegisterRequest:
       type: object
       required: [username, email, password]
@@ -436,6 +500,8 @@ components:
           type: string
         answers:
           type: string
+          description: Compact CSV of submitted slider values.
+          example: "100,100,100,100,100,100,100,100,100,100,100,100,100,100,0,0,0,0,0,0,0,0,0,0,0,0,0,0"
         duration:
           type: integer
         created:

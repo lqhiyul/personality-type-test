@@ -47,22 +47,14 @@ func newTestApp(t *testing.T) *App {
 	}
 }
 
-func answersForType(code string) []string {
-	answers := make([]string, len(questions))
+func answersForType(code string) []int {
+	answers := make([]int, len(questions))
 	for i, question := range questions {
 		if strings.Contains(code, question.A) {
-			answers[i] = question.A
+			answers[i] = 0
 			continue
 		}
-		answers[i] = question.B
-	}
-	return answers
-}
-
-func lowerAnswersForType(code string) []string {
-	answers := answersForType(code)
-	for i := range answers {
-		answers[i] = strings.ToLower(answers[i])
+		answers[i] = 100
 	}
 	return answers
 }
@@ -128,7 +120,7 @@ func login(t *testing.T, app *App) []*http.Cookie {
 
 func addStoredResult(t *testing.T, app *App, id, code string) {
 	t.Helper()
-	if err := app.store.Add(Result{ID: id, Name: "Yehor", Type: code, Answers: strings.Join(answersForType(code), "")}); err != nil {
+	if err := app.store.Add(Result{ID: id, Name: "Yehor", Type: code, Answers: encodeSliderAnswers(answersForType(code))}); err != nil {
 		t.Fatalf("store.Add() error = %v", err)
 	}
 }
@@ -196,16 +188,19 @@ func TestHandleSubmitReturnsProfileAndClampsDuration(t *testing.T) {
 	if res.Type != "INFJ" || res.Profile.Type != "INFJ" {
 		t.Fatalf("expected INFJ profile, got type=%q profile=%q", res.Type, res.Profile.Type)
 	}
+	if len(res.Profile.Dimensions) != 4 || res.Profile.Dimensions[0].RightPercent != 100 {
+		t.Fatalf("expected weighted profile percentages, got %+v", res.Profile.Dimensions)
+	}
 	if res.Result.Duration != 0 {
 		t.Fatalf("expected clamped duration 0, got %d", res.Result.Duration)
 	}
 }
 
-func TestSubmitAcceptsUnicodeNameAndStoresNormalizedAnswers(t *testing.T) {
+func TestSubmitAcceptsUnicodeNameAndStoresSliderAnswers(t *testing.T) {
 	app := newTestApp(t)
 	rec := performJSON(app, http.MethodPost, "/api/submit", map[string]any{
 		"name":     "Єгор",
-		"answers":  lowerAnswersForType("INTJ"),
+		"answers":  answersForType("INTJ"),
 		"duration": 42,
 	})
 	if rec.Code != http.StatusOK {
@@ -222,8 +217,8 @@ func TestSubmitAcceptsUnicodeNameAndStoresNormalizedAnswers(t *testing.T) {
 	if results[0].Name != "Єгор" {
 		t.Fatalf("expected unicode name to be preserved, got %q", results[0].Name)
 	}
-	if results[0].Answers != strings.Join(answersForType("INTJ"), "") {
-		t.Fatalf("expected uppercase normalized answers, got %q", results[0].Answers)
+	if results[0].Answers != encodeSliderAnswers(answersForType("INTJ")) {
+		t.Fatalf("expected slider answers, got %q", results[0].Answers)
 	}
 }
 
@@ -240,8 +235,12 @@ func TestSubmitRejectsInvalidPayloads(t *testing.T) {
 		{name: "empty name", body: map[string]any{"name": "  ", "answers": answersForType("INTJ"), "duration": 1}, status: http.StatusBadRequest},
 		{name: "control character in name", body: map[string]any{"name": "Yehor\nAdmin", "answers": answersForType("INTJ"), "duration": 1}, status: http.StatusBadRequest},
 		{name: "unknown field", body: map[string]any{"name": "Yehor", "answers": answersForType("INTJ"), "duration": 1, "extra": true}, status: http.StatusBadRequest},
-		{name: "invalid answer count", body: map[string]any{"name": "Yehor", "answers": []string{"I"}, "duration": 1}, status: http.StatusBadRequest},
-		{name: "invalid answer value", body: map[string]any{"name": "Yehor", "answers": append([]string{"X"}, answersForType("INTJ")[1:]...), "duration": 1}, status: http.StatusBadRequest},
+		{name: "missing answers", body: map[string]any{"name": "Yehor", "duration": 1}, status: http.StatusBadRequest},
+		{name: "null answers", body: map[string]any{"name": "Yehor", "answers": nil, "duration": 1}, status: http.StatusBadRequest},
+		{name: "string answers", body: map[string]any{"name": "Yehor", "answers": []string{"I"}, "duration": 1}, status: http.StatusBadRequest},
+		{name: "invalid answer count", body: map[string]any{"name": "Yehor", "answers": []int{50}, "duration": 1}, status: http.StatusBadRequest},
+		{name: "negative answer value", body: map[string]any{"name": "Yehor", "answers": append([]int{-1}, answersForType("INTJ")[1:]...), "duration": 1}, status: http.StatusBadRequest},
+		{name: "answer value over 100", body: map[string]any{"name": "Yehor", "answers": append([]int{101}, answersForType("INTJ")[1:]...), "duration": 1}, status: http.StatusBadRequest},
 	}
 
 	for _, tc := range cases {

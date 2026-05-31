@@ -2,6 +2,7 @@ package app
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -9,9 +10,9 @@ import (
 )
 
 type submitRequest struct {
-	Name     string   `json:"name"`
-	Answers  []string `json:"answers"`
-	Duration int      `json:"duration"`
+	Name     string `json:"name"`
+	Answers  []int  `json:"answers"`
+	Duration int    `json:"duration"`
 }
 
 func (a *App) handleSubmit(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +33,7 @@ func (a *App) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	normalizedAnswers, err := normalizeAnswers(req.Answers)
+	normalizedAnswers, err := normalizeSliderAnswers(req.Answers)
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
@@ -43,7 +44,7 @@ func (a *App) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		ID:       newID(),
 		Name:     name,
 		Type:     profile.Type,
-		Answers:  strings.Join(normalizedAnswers, ""),
+		Answers:  encodeSliderAnswers(normalizedAnswers),
 		Duration: clampDuration(req.Duration),
 		Created:  time.Now().UTC(),
 	}
@@ -68,6 +69,14 @@ func (a *App) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, response)
+}
+
+func encodeSliderAnswers(answers []int) string {
+	parts := make([]string, len(answers))
+	for i, answer := range answers {
+		parts[i] = strconv.Itoa(answer)
+	}
+	return strings.Join(parts, ",")
 }
 
 func validName(name string) bool {
