@@ -1,8 +1,8 @@
 function demoAnswersForType(typeCode) {
   return questions().map((question) => {
-    if (typeCode.includes(question.codeLeft)) return question.codeLeft;
-    if (typeCode.includes(question.codeRight)) return question.codeRight;
-    return question.codeLeft;
+    if (typeCode.includes(question.codeLeft)) return "0";
+    if (typeCode.includes(question.codeRight)) return "100";
+    return "50";
   });
 }
 
@@ -13,11 +13,17 @@ function demoProfileFromAnswers(answers) {
     { key: "TF", leftCode: "T", rightCode: "F" },
     { key: "JP", leftCode: "J", rightCode: "P" },
   ];
+  const score = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+  questions().forEach((question, index) => {
+    const value = Number(normalizeSliderAnswer(answers[index]));
+    if (!Number.isFinite(value)) return;
+    score[question.codeLeft] += 100 - value;
+    score[question.codeRight] += value;
+  });
   return {
     dimensions: axes.map((axis) => {
-      const axisAnswers = answers.filter((answer, index) => QUESTION_METADATA[index]?.axis === axis.key && answer);
-      const leftScore = axisAnswers.filter((answer) => answer === axis.leftCode).length;
-      const rightScore = axisAnswers.filter((answer) => answer === axis.rightCode).length;
+      const leftScore = score[axis.leftCode] || 0;
+      const rightScore = score[axis.rightCode] || 0;
       const total = Math.max(1, leftScore + rightScore);
       const winner = rightScore > leftScore ? axis.rightCode : axis.leftCode;
       return {

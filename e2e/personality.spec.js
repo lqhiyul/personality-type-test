@@ -13,6 +13,8 @@ test("home page loads", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#quizSection")).toBeVisible();
   await expect(page.locator("#submitBtn")).toBeVisible();
+  await expect(page.locator("[data-question]")).toHaveCount(32);
+  await expect(page.locator("[data-answer-slider]")).toHaveCount(32);
 });
 
 test("quiz can be completed and shows a result", async ({ page }) => {
@@ -43,7 +45,7 @@ test("localized quiz, compatibility, and result text renders cleanly", async ({ 
     {
       code: "uk",
       quizTitle: "Відповідайте на ситуації, а не на ярлики",
-      firstQuestion: "Коли після напруженого дня",
+      firstQuestion: "У новому середовищі",
       compatibilityTitle: "Сумісність типів",
       compatibilitySection: "Що може працювати добре",
       resultAction: "Поділитися результатом",
@@ -51,7 +53,7 @@ test("localized quiz, compatibility, and result text renders cleanly", async ({ 
     {
       code: "ru",
       quizTitle: "Отвечайте на ситуации, а не на ярлыки",
-      firstQuestion: "Когда после напряженного дня",
+      firstQuestion: "У новому середовищі",
       compatibilityTitle: "Совместимость типов",
       compatibilitySection: "Что может работать хорошо",
       resultAction: "Поделиться результатом",
@@ -59,7 +61,7 @@ test("localized quiz, compatibility, and result text renders cleanly", async ({ 
     {
       code: "en",
       quizTitle: "Answer situations, not labels",
-      firstQuestion: "After a demanding day",
+      firstQuestion: "У новому середовищі",
       compatibilityTitle: "Type Compatibility",
       compatibilitySection: "What can work well",
       resultAction: "Share result",

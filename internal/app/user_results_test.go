@@ -92,7 +92,7 @@ func TestLoggedInSubmitCreatesUserTestResult(t *testing.T) {
 	if !strings.Contains(stored.ScoresJSON, `"winner":"I"`) {
 		t.Fatalf("expected scores JSON to contain dimension winners, got %s", stored.ScoresJSON)
 	}
-	if !strings.Contains(stored.AnswersJSON, `"I"`) {
+	if !strings.Contains(stored.AnswersJSON, `"100"`) {
 		t.Fatalf("expected answers JSON to contain normalized answers, got %s", stored.AnswersJSON)
 	}
 

@@ -50,15 +50,33 @@ function wireEvents() {
     const button = event.target instanceof Element ? event.target.closest(".option") : null;
     if (!button) return;
     const index = Number(button.dataset.q);
-    const value = button.dataset.value || null;
+    const value = normalizeSliderAnswer(button.dataset.value);
     state.answers[index] = value;
     updateAnswerSelection(index, value);
     updateProgress();
     button.focus({ preventScroll: true });
   });
 
+  E("quizForm")?.addEventListener("pointerdown", (event) => {
+    const slider = event.target instanceof HTMLInputElement && event.target.matches("[data-answer-slider]") ? event.target : null;
+    if (!slider) return;
+    const index = Number(slider.dataset.q);
+    const value = normalizeSliderAnswer(slider.value);
+    state.answers[index] = value;
+    updateAnswerSelection(index, value);
+    updateProgress();
+  });
+
   document.addEventListener("input", (event) => {
     const target = event.target instanceof HTMLInputElement ? event.target : null;
+    if (target?.matches("[data-answer-slider]")) {
+      const index = Number(target.dataset.q);
+      const value = normalizeSliderAnswer(target.value);
+      state.answers[index] = value;
+      updateAnswerSelection(index, value);
+      updateProgress();
+      return;
+    }
     if (target?.id !== "typeSearch") return;
     state.typeSearch = target.value;
     const selection = target.selectionStart || target.value.length;

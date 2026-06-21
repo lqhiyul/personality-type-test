@@ -357,11 +357,16 @@ components:
           maxLength: 64
         answers:
           type: array
-          minItems: 28
-          maxItems: 28
+          minItems: 32
+          maxItems: 32
+          description: Slider values in canonical question order. 0 is fully left, 50 is balanced, and 100 is fully right.
           items:
-            type: string
-            enum: [E, I, S, N, T, F, J, P]
+            oneOf:
+              - type: integer
+                minimum: 0
+                maximum: 100
+              - type: string
+                pattern: "^(100|[0-9]{1,2})$"
         duration:
           type: integer
           minimum: 0

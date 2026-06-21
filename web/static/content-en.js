@@ -5,12 +5,12 @@ window.APP_CONTENT.en = {
   label: "EN",
   title: "MBTI Personality Type Test",
   editorial: { status: "i18n-foundation", nextFocus: ["human editorial reread", "function-aware model", "deploy QA"] },
-  description: "A 28-question personality test with an MBTI-style result, dimension breakdown, and a catalog of all 16 types.",
+  description: "A 32-question personality test with an MBTI-style result, dimension breakdown, and a catalog of all 16 types.",
   ui: {
     skip: "Skip to the test",
     tabs: { quiz: "Test", types: "Types" },
     languageLabel: "Interface language",
-    heroQuiz: { eyebrow: "MBTI test", title: "Personality type test", copy: "Answer 28 questions based on MBTI-style dimensions and humanistic socionics. You will get a type, a short explanation, and a four-scale breakdown." },
+    heroQuiz: { eyebrow: "MBTI test", title: "Personality type test", copy: "Answer 32 questions based on MBTI-style dimensions and humanistic socionics. You will get a type, a short explanation, and a four-scale breakdown." },
     heroTypes: { eyebrow: "16 types", title: "MBTI personality types", copy: "A searchable catalog of all types with filters, English socionics codes, and detailed descriptions." },
     progress: { label: "Answered: {done} / {total}", subtitle: "Each answer softly lights up your progress", percent: "{percent}%", questions: "Questions", done: "Answered", left: "Left" },
     form: { nameLabel: "Your name", namePlaceholder: "Enter your name", submit: "Show result", reset: "Clear" },
@@ -30,36 +30,7 @@ window.APP_CONTENT.en = {
     TF: { label: "Decisions", left: "Thinking", right: "Feeling" },
     JP: { label: "Rhythm", left: "Structure", right: "Flexibility" }
   },
-  questions: [
-    { text: "When I need to recharge, I usually...", left: "move toward people, conversation, and activity", right: "choose quiet, pause, and space for myself", codeLeft: "E", codeRight: "I" },
-    { text: "In a new group, I usually...", left: "join the conversation sooner", right: "watch and listen first", codeLeft: "E", codeRight: "I" },
-    { text: "When a thought is still forming, it is easier for me to...", left: "talk it through out loud", right: "think it through internally first", codeLeft: "E", codeRight: "I" },
-    { text: "After a busy day, I recover faster...", left: "through light interaction or activity", right: "alone or with a very small circle", codeLeft: "E", codeRight: "I" },
-    { text: "In teamwork, it feels more natural to...", left: "pick up the shared pace", right: "have time for quiet deep work", codeLeft: "E", codeRight: "I" },
-    { text: "From the outside, I usually seem...", left: "more open and quick to respond", right: "more reserved and careful", codeLeft: "E", codeRight: "I" },
-    { text: "When I get an idea, I tend to...", left: "share it right away", right: "let it mature before discussing it", codeLeft: "E", codeRight: "I" },
-    { text: "To understand a situation, I trust more in...", left: "facts, details, and direct experience", right: "patterns, meanings, and possible scenarios", codeLeft: "S", codeRight: "N" },
-    { text: "Information is easier for me when it is...", left: "concrete and well structured", right: "open to interpretation", codeLeft: "S", codeRight: "N" },
-    { text: "In new ideas, I am more interested in...", left: "how to apply them practically", right: "what possibilities they open", codeLeft: "S", codeRight: "N" },
-    { text: "I more often notice...", left: "what is happening here and now", right: "where things may lead", codeLeft: "S", codeRight: "N" },
-    { text: "When listening to an explanation, I prefer...", left: "examples, facts, and specifics", right: "the overall idea and conceptual logic", codeLeft: "S", codeRight: "N" },
-    { text: "When planning, I rely more on...", left: "proven steps and experience", right: "hypotheses, options, and future implications", codeLeft: "S", codeRight: "N" },
-    { text: "I feel closer to thinking that...", left: "describes reality precisely", right: "sees the hidden structure", codeLeft: "S", codeRight: "N" },
-    { text: "In a difficult decision, I first look for...", left: "logic, cause, and objective criteria", right: "human impact and ethical balance", codeLeft: "T", codeRight: "F" },
-    { text: "When giving feedback, I am more likely to...", left: "speak directly and to the point", right: "choose a form that does not devalue the person", codeLeft: "T", codeRight: "F" },
-    { text: "In a disagreement, I care more about...", left: "finding the correct argument", right: "preserving respect and connection", codeLeft: "T", codeRight: "F" },
-    { text: "I usually evaluate a decision by...", left: "how rational it is", right: "how it affects people", codeLeft: "T", codeRight: "F" },
-    { text: "When someone makes a mistake, I notice faster...", left: "where the logic breaks", right: "what the person may have felt", codeLeft: "T", codeRight: "F" },
-    { text: "The communication style closer to me is...", left: "honest, precise, and not overdecorated", right: "warm, attentive, and supportive", codeLeft: "T", codeRight: "F" },
-    { text: "In conflict, it feels more natural to...", left: "separate facts from emotions", right: "lower the tension first", codeLeft: "T", codeRight: "F" },
-    { text: "When there are many tasks, I feel better when I...", left: "have a plan and move through it", right: "keep room to change course", codeLeft: "J", codeRight: "P" },
-    { text: "Deadlines usually...", left: "help me stay organized", right: "create extra pressure", codeLeft: "J", codeRight: "P" },
-    { text: "Starting something new, I usually...", left: "want to understand the steps in advance", right: "start moving and clarify along the way", codeLeft: "J", codeRight: "P" },
-    { text: "It is easier for me to rest when...", left: "the main tasks are closed", right: "I am not tied to a rigid plan", codeLeft: "J", codeRight: "P" },
-    { text: "In everyday life, I prefer...", left: "predictability and order", right: "flexibility and freedom to adjust", codeLeft: "J", codeRight: "P" },
-    { text: "When plans change, I more often...", left: "feel my rhythm get disrupted", right: "adapt quickly", codeLeft: "J", codeRight: "P" },
-    { text: "My work style is closer to...", left: "steady completion", right: "live adaptation to the situation", codeLeft: "J", codeRight: "P" }
-  ],
+  questions: window.MBTI_QUESTION_BANK_V3_UK || [],
   types: {
     INTJ: { name: "Strategist", socioName: "Analyst", quadra: "Alpha", tagline: "A calm strategic type drawn to systems, long-range plans, and precise thinking." },
     INTP: { name: "Logician", socioName: "Critic", quadra: "Gamma", tagline: "An observant strategic type that likes analyzing causes, consequences, and hidden logic." },
@@ -79,3 +50,5 @@ window.APP_CONTENT.en = {
     ESFP: { name: "Performer", socioName: "Politician", quadra: "Gamma", tagline: "A bright, lively, flexible type with a strong feel for people and the moment." }
   }
 };
+
+

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -63,6 +64,34 @@ func lowerAnswersForType(code string) []string {
 	answers := answersForType(code)
 	for i := range answers {
 		answers[i] = strings.ToLower(answers[i])
+	}
+	return answers
+}
+
+func normalizedAnswersForType(t *testing.T, code string) []string {
+	t.Helper()
+	normalized, err := normalizeAnswers(answersForType(code))
+	if err != nil {
+		t.Fatalf("normalizeAnswers(%q) error = %v", code, err)
+	}
+	return normalized
+}
+
+func storedAnswersForType(t *testing.T, code string) string {
+	t.Helper()
+	return strings.Join(normalizedAnswersForType(t, code), ",")
+}
+
+func numericAnswersForType(t *testing.T, code string) []int {
+	t.Helper()
+	normalized := normalizedAnswersForType(t, code)
+	answers := make([]int, len(normalized))
+	for i, answer := range normalized {
+		value, err := strconv.Atoi(answer)
+		if err != nil {
+			t.Fatalf("Atoi(%q) error = %v", answer, err)
+		}
+		answers[i] = value
 	}
 	return answers
 }
@@ -128,7 +157,7 @@ func login(t *testing.T, app *App) []*http.Cookie {
 
 func addStoredResult(t *testing.T, app *App, id, code string) {
 	t.Helper()
-	if err := app.store.Add(Result{ID: id, Name: "Yehor", Type: code, Answers: strings.Join(answersForType(code), "")}); err != nil {
+	if err := app.store.Add(Result{ID: id, Name: "Yehor", Type: code, Answers: storedAnswersForType(t, code)}); err != nil {
 		t.Fatalf("store.Add() error = %v", err)
 	}
 }
@@ -178,7 +207,7 @@ func TestHandleSubmitReturnsProfileAndClampsDuration(t *testing.T) {
 	app := newTestApp(t)
 	rec := performJSON(app, http.MethodPost, "/api/submit", map[string]any{
 		"name":     "Yehor",
-		"answers":  answersForType("INFJ"),
+		"answers":  numericAnswersForType(t, "INFJ"),
 		"duration": -20,
 	})
 	if rec.Code != http.StatusOK {
@@ -222,8 +251,8 @@ func TestSubmitAcceptsUnicodeNameAndStoresNormalizedAnswers(t *testing.T) {
 	if results[0].Name != "Єгор" {
 		t.Fatalf("expected unicode name to be preserved, got %q", results[0].Name)
 	}
-	if results[0].Answers != strings.Join(answersForType("INTJ"), "") {
-		t.Fatalf("expected uppercase normalized answers, got %q", results[0].Answers)
+	if results[0].Answers != storedAnswersForType(t, "INTJ") {
+		t.Fatalf("expected normalized slider answers, got %q", results[0].Answers)
 	}
 }
 
@@ -515,7 +544,7 @@ func TestBuildStatsAggregatesMultipleResults(t *testing.T) {
 
 func TestStaticAssetsServed(t *testing.T) {
 	app := newTestApp(t)
-	targets := []string{"/", "/compatibility-engine.js", "/content-uk.js", "/content-ru.js", "/content-en.js", "/content-author.js", "/content-profiles-uk.js", "/content-profiles-ru.js", "/content-profiles-en.js", "/style.css", "/types-data.js"}
+	targets := []string{"/", "/compatibility-engine.js", "/question-bank-v3-uk.js", "/content-uk.js", "/content-ru.js", "/content-en.js", "/content-author.js", "/content-profiles-uk.js", "/content-profiles-ru.js", "/content-profiles-en.js", "/style.css", "/types-data.js"}
 	targets = append(targets, []string{"/js/api.js", "/js/state.js", "/js/dom.js", "/js/utils.js", "/js/i18n.js", "/js/ui.js", "/js/results.js", "/js/compatibility.js", "/js/quiz.js", "/js/types.js", "/js/admin.js", "/js/auth.js", "/js/profile.js", "/js/friends.js", "/js/safety.js", "/js/messages.js", "/js/share.js", "/js/events.js", "/js/app.js"}...)
 	for _, code := range []string{"intj", "intp", "entj", "entp", "infj", "infp", "enfj", "enfp", "istj", "isfj", "estj", "esfj", "istp", "isfp", "estp", "esfp"} {
 		targets = append(targets, "/assets/share-cards/"+code+".png")

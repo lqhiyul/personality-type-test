@@ -2,6 +2,7 @@ package scoring
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -32,8 +33,11 @@ type DimensionMeta struct {
 }
 
 type Question struct {
-	A string
-	B string
+	Axis      string
+	CodeLeft  string
+	CodeRight string
+	A         string
+	B         string
 }
 
 var dimensions = []DimensionMeta{
@@ -44,34 +48,38 @@ var dimensions = []DimensionMeta{
 }
 
 var questions = []Question{
-	{A: "E", B: "I"},
-	{A: "E", B: "I"},
-	{A: "E", B: "I"},
-	{A: "E", B: "I"},
-	{A: "E", B: "I"},
-	{A: "E", B: "I"},
-	{A: "E", B: "I"},
-	{A: "S", B: "N"},
-	{A: "S", B: "N"},
-	{A: "S", B: "N"},
-	{A: "S", B: "N"},
-	{A: "S", B: "N"},
-	{A: "S", B: "N"},
-	{A: "S", B: "N"},
-	{A: "T", B: "F"},
-	{A: "T", B: "F"},
-	{A: "T", B: "F"},
-	{A: "T", B: "F"},
-	{A: "T", B: "F"},
-	{A: "T", B: "F"},
-	{A: "T", B: "F"},
-	{A: "J", B: "P"},
-	{A: "J", B: "P"},
-	{A: "J", B: "P"},
-	{A: "J", B: "P"},
-	{A: "J", B: "P"},
-	{A: "J", B: "P"},
-	{A: "J", B: "P"},
+	{Axis: "S/N", CodeLeft: "S", CodeRight: "N", A: "S", B: "N"},
+	{Axis: "T/F", CodeLeft: "T", CodeRight: "F", A: "T", B: "F"},
+	{Axis: "E/I", CodeLeft: "E", CodeRight: "I", A: "E", B: "I"},
+	{Axis: "J/P", CodeLeft: "J", CodeRight: "P", A: "J", B: "P"},
+	{Axis: "N/S", CodeLeft: "N", CodeRight: "S", A: "N", B: "S"},
+	{Axis: "F/T", CodeLeft: "F", CodeRight: "T", A: "F", B: "T"},
+	{Axis: "I/E", CodeLeft: "I", CodeRight: "E", A: "I", B: "E"},
+	{Axis: "P/J", CodeLeft: "P", CodeRight: "J", A: "P", B: "J"},
+	{Axis: "T/F", CodeLeft: "T", CodeRight: "F", A: "T", B: "F"},
+	{Axis: "S/N", CodeLeft: "S", CodeRight: "N", A: "S", B: "N"},
+	{Axis: "J/P", CodeLeft: "J", CodeRight: "P", A: "J", B: "P"},
+	{Axis: "E/I", CodeLeft: "E", CodeRight: "I", A: "E", B: "I"},
+	{Axis: "F/T", CodeLeft: "F", CodeRight: "T", A: "F", B: "T"},
+	{Axis: "N/S", CodeLeft: "N", CodeRight: "S", A: "N", B: "S"},
+	{Axis: "P/J", CodeLeft: "P", CodeRight: "J", A: "P", B: "J"},
+	{Axis: "I/E", CodeLeft: "I", CodeRight: "E", A: "I", B: "E"},
+	{Axis: "J/P", CodeLeft: "J", CodeRight: "P", A: "J", B: "P"},
+	{Axis: "E/I", CodeLeft: "E", CodeRight: "I", A: "E", B: "I"},
+	{Axis: "S/N", CodeLeft: "S", CodeRight: "N", A: "S", B: "N"},
+	{Axis: "T/F", CodeLeft: "T", CodeRight: "F", A: "T", B: "F"},
+	{Axis: "P/J", CodeLeft: "P", CodeRight: "J", A: "P", B: "J"},
+	{Axis: "I/E", CodeLeft: "I", CodeRight: "E", A: "I", B: "E"},
+	{Axis: "N/S", CodeLeft: "N", CodeRight: "S", A: "N", B: "S"},
+	{Axis: "F/T", CodeLeft: "F", CodeRight: "T", A: "F", B: "T"},
+	{Axis: "E/I", CodeLeft: "E", CodeRight: "I", A: "E", B: "I"},
+	{Axis: "J/P", CodeLeft: "J", CodeRight: "P", A: "J", B: "P"},
+	{Axis: "T/F", CodeLeft: "T", CodeRight: "F", A: "T", B: "F"},
+	{Axis: "S/N", CodeLeft: "S", CodeRight: "N", A: "S", B: "N"},
+	{Axis: "I/E", CodeLeft: "I", CodeRight: "E", A: "I", B: "E"},
+	{Axis: "P/J", CodeLeft: "P", CodeRight: "J", A: "P", B: "J"},
+	{Axis: "F/T", CodeLeft: "F", CodeRight: "T", A: "F", B: "T"},
+	{Axis: "N/S", CodeLeft: "N", CodeRight: "S", A: "N", B: "S"},
 }
 
 func Dimensions() []DimensionMeta {
@@ -95,10 +103,20 @@ func NormalizeAnswers(answers []string) ([]string, error) {
 	for i, answer := range answers {
 		answer = strings.ToUpper(strings.TrimSpace(answer))
 		question := questions[i]
-		if answer != question.A && answer != question.B {
+		switch answer {
+		case question.CodeLeft:
+			normalized[i] = "0"
+			continue
+		case question.CodeRight:
+			normalized[i] = "100"
+			continue
+		}
+
+		value, err := strconv.Atoi(answer)
+		if err != nil || value < 0 || value > 100 {
 			return nil, fmt.Errorf("invalid answer for question %d", i+1)
 		}
-		normalized[i] = answer
+		normalized[i] = strconv.Itoa(value)
 	}
 	return normalized, nil
 }
@@ -121,8 +139,17 @@ func ComputeProfile(answers []string) (TypeProfile, error) {
 
 func BuildProfile(normalized []string) TypeProfile {
 	score := map[string]int{"E": 0, "I": 0, "S": 0, "N": 0, "T": 0, "F": 0, "J": 0, "P": 0}
-	for _, answer := range normalized {
-		score[answer]++
+	for i, answer := range normalized {
+		if i >= len(questions) {
+			break
+		}
+		question := questions[i]
+		value, ok := answerValue(answer, question)
+		if !ok {
+			continue
+		}
+		score[question.CodeLeft] += 100 - value
+		score[question.CodeRight] += value
 	}
 
 	profile := TypeProfile{Dimensions: make([]DimensionScore, 0, len(dimensions))}
@@ -177,4 +204,19 @@ func pick(a, b int, left, right string) string {
 		return left
 	}
 	return right
+}
+
+func answerValue(answer string, question Question) (int, bool) {
+	answer = strings.ToUpper(strings.TrimSpace(answer))
+	switch answer {
+	case question.CodeLeft:
+		return 0, true
+	case question.CodeRight:
+		return 100, true
+	}
+	value, err := strconv.Atoi(answer)
+	if err != nil || value < 0 || value > 100 {
+		return 0, false
+	}
+	return value, true
 }

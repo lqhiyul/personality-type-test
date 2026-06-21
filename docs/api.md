@@ -59,14 +59,16 @@ Request:
 {
   "name": "Yehor",
   "answers": [
-    "I", "I", "I", "I", "I", "I", "I",
-    "N", "N", "N", "N", "N", "N", "N",
-    "T", "T", "T", "T", "T", "T", "T",
-    "J", "J", "J", "J", "J", "J", "J"
+    100, 0, 100, 0, 0, 100, 0, 100,
+    0, 100, 0, 100, 100, 0, 100, 0,
+    0, 100, 100, 0, 100, 0, 0, 100,
+    100, 0, 0, 100, 0, 100, 100, 0
   ],
   "duration": 180
 }
 ```
+
+`answers` must contain 32 slider values in question order. Each value is `0` to `100`, where `0` gives all weight to the left option, `100` gives all weight to the right option, and `50` splits weight evenly. Numeric strings are accepted for browser clients; legacy letter answers are normalized to `0`/`100`.
 
 Success `200`:
 
@@ -80,7 +82,7 @@ Success `200`:
     "id": "b8e81824f40d",
     "name": "Yehor",
     "type": "INTJ",
-    "answers": "IIIIIIINNNNNNNTTTTTTTJJJJJJJ",
+    "answers": "100,0,100,0,0,100,0,100,0,100,0,100,100,0,100,0,0,100,100,0,100,0,0,100,100,0,0,100,0,100,100,0",
     "duration": 180,
     "created": "2026-05-28T10:00:00Z"
   },
@@ -92,7 +94,7 @@ Common errors:
 
 - `400 {"error":"invalid JSON request"}`
 - `400 {"error":"name must be 1 to 64 characters"}`
-- `400 {"error":"expected 28 answers"}`
+- `400 {"error":"expected 32 answers"}`
 - `403 {"error":"csrf token is missing or invalid"}`
 - `500 {"error":"could not save result"}`
 
@@ -849,7 +851,7 @@ Success `200`:
       "id": "b8e81824f40d",
       "name": "Yehor",
       "type": "INTJ",
-      "answers": "IIIIIIINNNNNNNTTTTTTTJJJJJJJ",
+      "answers": "100,0,100,0,0,100,0,100,0,100,0,100,100,0,100,0,0,100,100,0,100,0,0,100,100,0,0,100,0,100,100,0",
       "duration": 180,
       "created": "2026-05-28T10:00:00Z"
     }

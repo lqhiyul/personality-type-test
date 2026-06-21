@@ -3,8 +3,8 @@
   const uiPatch = {
     uk: {
       title: "Тест типу особистості",
-      description: "28 ситуаційних питань, результат за MBTI-логікою, соціонічний код і короткий людський опис типу.",
-      heroQuiz: { eyebrow: "Типологічний тест", title: "Відповідайте на ситуації, а не на ярлики", copy: "28 коротких питань допоможуть побачити, як ви зазвичай думаєте, вирішуєте й реагуєте. Наприкінці - тип, шкали й спокійний розбір без драматизації." },
+      description: "32 ситуаційні питання, результат за MBTI-логікою, соціонічний код і короткий людський опис типу.",
+      heroQuiz: { eyebrow: "Типологічний тест", title: "Відповідайте на ситуації, а не на ярлики", copy: "32 короткі питання допоможуть побачити, як ви зазвичай думаєте, вирішуєте й реагуєте. Наприкінці - тип, шкали й спокійний розбір без драматизації." },
       heroTypes: { eyebrow: "16 типів", title: "Типи в одному місці", copy: "Порівняйте короткі описи, назви, MBTI-коди й соц. орієнтири, щоб швидше побачити різницю між типами." },
       result: { resultMeaning: "Тип склався з відповідей по чотирьох шкалах. Далі варто дивитися, які звички мислення справді впізнаються.", typeImage: "Короткий образ", thinkingStyle: "Як мислить", difficulties: "Можливі труднощі", development: "Що допомагає розвиватися", shortSummary: "Підсумок", readProfile: "Читати повний профіль", share: "Поділитися результатом" },
       trust: { title: "Коротко про тест", text: "Це не діагноз і не остаточний ярлик. Тест допомагає спокійно подивитися на звичний стиль мислення. Прогрес може зберігатися у вашому браузері, щоб відповіді не зникли після оновлення; результат завжди можна очистити й пройти заново." },
@@ -16,8 +16,8 @@
     },
     ru: {
       title: "Тест типа личности",
-      description: "28 ситуационных вопросов, MBTI-логика результата, соционический код и короткое живое описание типа.",
-      heroQuiz: { eyebrow: "Типологический тест", title: "Отвечайте на ситуации, а не на ярлыки", copy: "28 коротких вопросов помогают увидеть, как вы обычно думаете, решаете и реагируете. В конце - тип, шкалы и спокойный разбор без драматизации." },
+      description: "32 ситуационных вопроса, MBTI-логика результата, соционический код и короткое живое описание типа.",
+      heroQuiz: { eyebrow: "Типологический тест", title: "Отвечайте на ситуации, а не на ярлыки", copy: "32 коротких вопроса помогают увидеть, как вы обычно думаете, решаете и реагируете. В конце - тип, шкалы и спокойный разбор без драматизации." },
       heroTypes: { eyebrow: "16 типов", title: "Типы в одном месте", copy: "Сравните короткие описания, названия, MBTI-коды и соц. ориентиры, чтобы быстрее увидеть разницу между типами." },
       result: { resultMeaning: "Тип сложился из ответов по четырем шкалам. Дальше лучше смотреть, какие привычки мышления действительно узнаются.", typeImage: "Короткий образ", thinkingStyle: "Как мыслит", difficulties: "Возможные трудности", development: "Что помогает развиваться", shortSummary: "Итог", readProfile: "Читать полный профиль", share: "Поделиться результатом" },
       trust: { title: "Коротко о тесте", text: "Это не диагноз и не окончательный ярлык. Тест помогает спокойно посмотреть на привычный стиль мышления. Прогресс может храниться в вашем браузере, чтобы ответы не пропали после обновления; результат всегда можно очистить и пройти заново." },
@@ -29,8 +29,8 @@
     },
     en: {
       title: "Personality Type Test",
-      description: "28 situational questions, MBTI-style scoring, a socionics code, and a concise human-readable type summary.",
-      heroQuiz: { eyebrow: "Typology test", title: "Answer situations, not labels", copy: "28 short questions help you see how you tend to think, decide, and react. At the end you get a type, four scales, and a calm breakdown without the drama." },
+      description: "32 situational questions, MBTI-style scoring, a socionics code, and a concise human-readable type summary.",
+      heroQuiz: { eyebrow: "Typology test", title: "Answer situations, not labels", copy: "32 short questions help you see how you tend to think, decide, and react. At the end you get a type, four scales, and a calm breakdown without the drama." },
       heroTypes: { eyebrow: "16 types", title: "Types in one place", copy: "Compare short descriptions, names, MBTI codes, and socionics orientations to see the differences between types faster." },
       result: { resultMeaning: "The type comes from your answers across four scales. The useful part is noticing which thinking habits actually fit.", typeImage: "Snapshot", thinkingStyle: "Thinking style", difficulties: "Possible difficulties", development: "What helps this type grow", shortSummary: "In short", readProfile: "Read full profile", share: "Share result" },
       trust: { title: "A quick note", text: "This is not a diagnosis or a final label. The test is a calm way to look at your usual thinking style. Progress may be saved in your browser so answers do not disappear after refresh; you can always clear the result and take it again." },
@@ -42,97 +42,6 @@
     }
   };
 
-  const questionRows = {
-    uk: [
-      ["Коли після напруженого дня треба повернути енергію, мені частіше допомагає...", "поговорити з кимось і зловити живий темп", "побути без зайвих стимулів і зібрати думки", "E", "I"],
-      ["На зустрічі, де тема ще нечітка, я зазвичай...", "озвучую варіанти, щоб розмова швидше ожила", "спершу слухаю й формую позицію всередині", "E", "I"],
-      ["Коли думка ще не готова, мені легше...", "проговорити її вголос і зібрати по ходу", "дати їй дозріти, перш ніж показувати іншим", "E", "I"],
-      ["У новій компанії я частіше...", "швидко знаходжу точку входу в розмову", "придивляюся до атмосфери й людей", "E", "I"],
-      ["У командній роботі мені природніше...", "підхоплювати загальний рух і тримати обмін", "мати час на глибоку частину без постійних перемикань", "E", "I"],
-      ["Коли з'являється цікава ідея, я частіше...", "одразу ділюся нею, щоб перевірити реакцію", "спочатку перевіряю її всередині", "E", "I"],
-      ["Якщо навколо багато людей і подій, я зазвичай...", "оживаю й швидше включаюся", "швидко втомлююся й шукаю паузу", "E", "I"],
-      ["Коли мені пояснюють нову ідею, я швидше довіряю їй, якщо бачу...", "приклади, факти й конкретне застосування", "загальну логіку, наслідки й прихований сенс", "S", "N"],
-      ["У складній ситуації я перш за все помічаю...", "що реально відбувається і які деталі важливі", "до чого це може привести і який патерн повторюється", "S", "N"],
-      ["Коли треба навчитися новому, мені краще заходить...", "покрокова практика з видимим результатом", "розуміння принципу, після якого деталі стають ясними", "S", "N"],
-      ["У розмові про майбутній проєкт я частіше питаю...", "що саме треба зробити, коли і якими ресурсами", "яку можливість це відкриває і як може змінитися картина", "S", "N"],
-      ["Мене більше насторожує, коли ідея...", "не має перевірених кроків і опори в реальності", "не має сенсу, напрямку або глибшого пояснення", "S", "N"],
-      ["Коли я описую проблему, я частіше починаю з...", "фактів, умов і того, що вже відомо", "загальної картини й можливих причин", "S", "N"],
-      ["У хорошому рішенні для мене важливо, щоб воно...", "працювало в конкретних умовах без зайвої теорії", "мало потенціал і не закривало майбутні варіанти", "S", "N"],
-      ["Коли рішення зачіпає людей і процес, я спершу перевіряю...", "чи витримує воно логіку, критерії й наслідки", "як воно вплине на довіру, тон і людські межі", "T", "F"],
-      ["Коли треба сказати неприємну правду, мені ближче...", "говорити прямо, щоб не розмивати суть", "підібрати форму, щоб людину не знецінити", "T", "F"],
-      ["У суперечці я частіше намагаюся...", "відділити факти від емоцій і знайти сильний аргумент", "знизити напругу й не втратити контакт", "T", "F"],
-      ["Коли хтось помиляється, я найшвидше помічаю...", "де саме порушена логіка або правило", "що людина могла відчувати і чому так сталося", "T", "F"],
-      ["Для мене чесний фідбек — це насамперед...", "конкретика без зайвого прикрашання", "правда, сказана з повагою до людини", "T", "F"],
-      ["У команді мені легше довіряти рішенню, якщо...", "є прозорі правила й зрозуміла відповідальність", "є відчуття взаємної поваги й людської безпеки", "T", "F"],
-      ["Коли треба обрати між ефективністю і комфортом людей, я частіше...", "шукаю рішення, яке не втратить результат", "шукаю рішення, яке не зламає людей", "T", "F"],
-      ["Коли справ багато, мені спокійніше, якщо...", "є план, черга задач і зрозумілий фініш", "є простір змінити хід, якщо контекст зміниться", "J", "P"],
-      ["Дедлайн для мене частіше...", "допомагає тримати форму і не розсипатися", "створює тиск, але іноді запускає найкращі рішення", "J", "P"],
-      ["Починаючи нову справу, я зазвичай хочу...", "спершу зрозуміти кроки й очікуваний результат", "увійти в процес і уточнювати маршрут по дорозі", "J", "P"],
-      ["Відпочивати мені легше, коли...", "основні справи закриті або хоча б розкладені", "я не прив'язаний до жорсткого плану", "J", "P"],
-      ["Якщо плани раптово змінюються, я частіше...", "відчуваю, що збивається ритм і треба швидко зібрати новий порядок", "доволі швидко перебудовуюся й шукаю нові варіанти", "J", "P"],
-      ["Мій робочий стиль більше схожий на...", "послідовне закриття задач одна за одною", "живу адаптацію з кількома відкритими напрямами", "J", "P"],
-      ["У побуті мені ближче...", "передбачуваність, порядок і менше випадкових ривків", "гнучкість, імпровізація і свобода маневру", "J", "P"]
-    ],    ru: [
-      ["Когда после напряженного дня нужно вернуть энергию, мне чаще помогает...", "поговорить с кем-то и поймать живой темп", "побыть без лишних стимулов и собрать мысли", "E", "I"],
-      ["На встрече, где тема еще неясна, я обычно...", "озвучиваю варианты, чтобы разговор быстрее ожил", "сначала слушаю и формирую позицию внутри", "E", "I"],
-      ["Когда мысль еще не готова, мне легче...", "проговорить ее вслух и собрать по ходу", "дать ей дозреть, прежде чем показывать другим", "E", "I"],
-      ["В новой компании я чаще...", "быстро нахожу точку входа в разговор", "присматриваюсь к атмосфере и людям", "E", "I"],
-      ["В командной работе мне естественнее...", "подхватывать общий ритм и поддерживать обмен", "иметь время на глубокую часть без постоянных переключений", "E", "I"],
-      ["Когда появляется интересная идея, я чаще...", "сразу делюсь ей, чтобы проверить реакцию", "сначала проверяю ее внутри", "E", "I"],
-      ["Если вокруг много людей и событий, я обычно...", "оживаю и быстрее включаюсь", "быстро устаю и ищу паузу", "E", "I"],
-      ["Когда мне объясняют новую идею, я быстрее доверяю ей, если вижу...", "примеры, факты и конкретное применение", "общую логику, последствия и скрытый смысл", "S", "N"],
-      ["В сложной ситуации я прежде всего замечаю...", "что реально происходит и какие детали важны", "к чему это может привести и какой паттерн повторяется", "S", "N"],
-      ["Когда нужно научиться новому, мне лучше подходит...", "пошаговая практика с видимым результатом", "понимание принципа, после которого детали становятся ясными", "S", "N"],
-      ["В разговоре о будущем проекте я чаще спрашиваю...", "что именно нужно сделать, когда и какими ресурсами", "какую возможность это открывает и как может измениться картина", "S", "N"],
-      ["Меня больше настораживает, когда идея...", "не имеет проверенных шагов и опоры в реальности", "не имеет смысла, направления или более глубокого объяснения", "S", "N"],
-      ["Когда я описываю проблему, я чаще начинаю с...", "фактов, условий и того, что уже известно", "общей картины и возможных причин", "S", "N"],
-      ["В хорошем решении для меня важно, чтобы оно...", "работало в конкретных условиях без лишней теории", "имело потенциал и не закрывало будущие варианты", "S", "N"],
-      ["Когда решение затрагивает людей и процесс, я сначала проверяю...", "выдерживает ли оно логику, критерии и последствия", "как оно повлияет на доверие, тон и человеческие границы", "T", "F"],
-      ["Когда нужно сказать неприятную правду, мне ближе...", "говорить прямо, чтобы не размывать суть", "подобрать форму, чтобы не обесценить человека", "T", "F"],
-      ["В споре я чаще стараюсь...", "отделить факты от эмоций и найти сильный аргумент", "снизить напряжение и не потерять контакт", "T", "F"],
-      ["Когда кто-то ошибается, я быстрее замечаю...", "где именно нарушена логика или правило", "что человек мог чувствовать и почему так вышло", "T", "F"],
-      ["Для меня честный фидбек — это прежде всего...", "конкретика без лишнего украшения", "правда, сказанная с уважением к человеку", "T", "F"],
-      ["В команде мне легче доверять решению, если...", "есть прозрачные правила и понятная ответственность", "есть ощущение взаимного уважения и человеческой безопасности", "T", "F"],
-      ["Когда нужно выбрать между эффективностью и комфортом людей, я чаще...", "ищу решение, которое не потеряет результат", "ищу решение, которое не сломает людей", "T", "F"],
-      ["Когда дел много, мне спокойнее, если...", "есть план, очередь задач и понятный финиш", "есть пространство изменить ход, если контекст изменится", "J", "P"],
-      ["Дедлайн для меня чаще...", "помогает держать форму и не рассыпаться", "создает давление, но иногда запускает лучшие решения", "J", "P"],
-      ["Начиная новое дело, я обычно хочу...", "сначала понять шаги и ожидаемый результат", "войти в процесс и уточнять маршрут по дороге", "J", "P"],
-      ["Отдыхать мне легче, когда...", "основные дела закрыты или хотя бы разложены", "я не привязан к жесткому плану", "J", "P"],
-      ["Если планы внезапно меняются, я чаще...", "чувствую, что сбивается ритм и нужно собрать новый порядок", "довольно быстро перестраиваюсь и ищу новые варианты", "J", "P"],
-      ["Мой рабочий стиль больше похож на...", "последовательное закрытие задач одна за другой", "живую адаптацию с несколькими открытыми направлениями", "J", "P"],
-      ["В быту мне ближе...", "предсказуемость, порядок и меньше случайных рывков", "гибкость, импровизация и свобода маневра", "J", "P"]
-    ],
-    en: [
-      ["After a demanding day, I usually regain energy by...", "talking to someone and catching a more active rhythm", "getting away from extra stimulation and collecting my thoughts", "E", "I"],
-      ["In a meeting where the topic is still unclear, I usually...", "say possible directions out loud so the discussion starts moving", "listen first and form my position internally", "E", "I"],
-      ["When an idea is not fully formed yet, it is easier for me to...", "talk it through and shape it while speaking", "let it mature before showing it to others", "E", "I"],
-      ["In a new group, I more often...", "find a way into the conversation quickly", "observe the atmosphere and people first", "E", "I"],
-      ["In teamwork, it feels more natural to...", "pick up the shared rhythm and keep exchange moving", "have time for deep work without constant switching", "E", "I"],
-      ["When an interesting idea appears, I tend to...", "share it early to test the reaction", "check it internally before opening it up", "E", "I"],
-      ["When there are many people and events around me, I usually...", "become more alive and involved", "get tired faster and look for a pause", "E", "I"],
-      ["When someone explains a new idea, I trust it faster when I see...", "examples, facts, and concrete use", "the broader logic, consequences, and hidden meaning", "S", "N"],
-      ["In a complex situation, I first notice...", "what is actually happening and which details matter", "where it may lead and which pattern is repeating", "S", "N"],
-      ["When learning something new, I prefer...", "step-by-step practice with visible results", "understanding the principle that makes the details click", "S", "N"],
-      ["When discussing a future project, I more often ask...", "what exactly must be done, when, and with which resources", "what possibility it opens and how the picture may change", "S", "N"],
-      ["I become more cautious when an idea...", "has no tested steps or grounding in reality", "has no meaning, direction, or deeper explanation", "S", "N"],
-      ["When describing a problem, I usually start with...", "facts, conditions, and what is already known", "the bigger picture and possible causes", "S", "N"],
-      ["For me, a good solution should...", "work in real conditions without too much theory", "keep potential open and avoid closing future options", "S", "N"],
-      ["When a decision affects people and process, I first check...", "whether it holds up logically and by clear criteria", "how it affects trust, tone, and human boundaries", "T", "F"],
-      ["When I need to say an uncomfortable truth, I prefer to...", "say it directly so the point stays clear", "choose the form carefully so the person is not devalued", "T", "F"],
-      ["In disagreement, I more often try to...", "separate facts from emotions and find the strongest argument", "lower the tension and keep the connection", "T", "F"],
-      ["When someone makes a mistake, I notice first...", "where the logic or rule broke", "what the person may have felt and why it happened", "T", "F"],
-      ["For me, honest feedback is mainly...", "specific information without unnecessary softening", "truth said with respect for the person", "T", "F"],
-      ["In a team, I trust a decision more when...", "rules and responsibilities are transparent", "there is mutual respect and psychological safety", "T", "F"],
-      ["When I must choose between efficiency and people's comfort, I more often...", "look for the option that keeps the result", "look for the option that does not break people", "T", "F"],
-      ["When there are many tasks, I feel calmer if...", "there is a plan, task order, and visible finish line", "there is room to change course if the context shifts", "J", "P"],
-      ["Deadlines usually...", "help me keep structure and not fall apart", "create pressure, but sometimes trigger my best solutions", "J", "P"],
-      ["When starting something new, I usually want to...", "understand the steps and expected result first", "enter the process and refine the route along the way", "J", "P"],
-      ["It is easier for me to rest when...", "the main tasks are closed or at least organized", "I am not tied to a rigid plan", "J", "P"],
-      ["When plans suddenly change, I more often...", "feel the rhythm break and need to rebuild order", "adapt fairly quickly and look for new options", "J", "P"],
-      ["My work style is closer to...", "finishing tasks one by one in sequence", "adaptive movement with several open directions", "J", "P"],
-      ["In everyday life, I prefer...", "predictability, order, and fewer random disruptions", "flexibility, improvisation, and room to maneuver", "J", "P"]
-    ]
-  };
   const typeRows = {
     uk: {
       INTJ: ["Системний тлумач", "Аналітик структури", "Альфа", "Будує внутрішню модель ситуації, шукає принцип і лише потім переходить до дії.", "Не поспішає з висновком: спершу збирає систему всередині, відсікає шум і тільки потім говорить упевнено.", "Мислить через структури, причинність і довгі наслідки. Часто бачить слабке місце в логіці раніше, ніж воно стане очевидним.", "Добре працює там, де є складна задача, автономія і повага до глибини. Не любить імітацію активності.", "Говорить стисло й по суті. Може здаватися сухим, якщо не бачить сенсу пояснювати очевидне для себе.", ["бачить приховану структуру", "думає на кілька кроків уперед", "тримає фокус у складних темах"], ["пояснювати висновки простіше", "не закриватися від людського контексту", "перевіряти модель реальністю раніше"], ["нетерпимість до хаосу", "ризик довго тримати думки всередині", "складність із теплим фідбеком"], "Допомагає рання перевірка ідей, короткі пояснення для команди і свідоме місце для людського фактора.", "Сильний, коли перетворює складність на зрозумілу систему, а не просто критикує хаос."],
@@ -629,11 +538,6 @@
     }
   };
 
-  const explanations = ["energy", "group entry", "idea processing", "social start", "team rhythm", "idea sharing", "stimulation", "evidence", "attention", "learning", "future project", "idea quality", "problem frame", "solution value", "decision filter", "hard truth", "conflict", "mistakes", "feedback", "team trust", "efficiency and comfort", "task load", "deadlines", "starting work", "rest", "change", "work rhythm", "everyday rhythm"];
-
-  function toQuestion(row, index) {
-    return { text: row[0], left: row[1], right: row[2], codeLeft: row[3], codeRight: row[4], meta: { explanation: explanations[index] || "question signal" } };
-  }
 
   function toType(row, code, lang) {
     return {
@@ -683,7 +587,7 @@
     deepMerge(content.ui, messagesPatch[lang]);
     content.title = uiPatch[lang].title;
     content.description = uiPatch[lang].description;
-    content.questions = questionRows[lang].map(toQuestion);
+    content.questions = window.MBTI_QUESTION_BANK_V3_UK || content.questions || [];
     content.types = Object.fromEntries(Object.entries(typeRows[lang]).map(([code, row]) => [code, toType(row, code, lang)]));
   });
 })();

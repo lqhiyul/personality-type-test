@@ -1,7 +1,10 @@
 package app
 
 import (
+	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -9,9 +12,25 @@ import (
 )
 
 type submitRequest struct {
-	Name     string   `json:"name"`
-	Answers  []string `json:"answers"`
-	Duration int      `json:"duration"`
+	Name     string        `json:"name"`
+	Answers  []answerInput `json:"answers"`
+	Duration int           `json:"duration"`
+}
+
+type answerInput string
+
+func (a *answerInput) UnmarshalJSON(data []byte) error {
+	var text string
+	if err := json.Unmarshal(data, &text); err == nil {
+		*a = answerInput(text)
+		return nil
+	}
+	var value int
+	if err := json.Unmarshal(data, &value); err == nil {
+		*a = answerInput(strconv.Itoa(value))
+		return nil
+	}
+	return errors.New("answer must be a string or integer")
 }
 
 func (a *App) handleSubmit(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +51,7 @@ func (a *App) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	normalizedAnswers, err := normalizeAnswers(req.Answers)
+	normalizedAnswers, err := normalizeAnswers(answerInputsToStrings(req.Answers))
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
@@ -43,7 +62,7 @@ func (a *App) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		ID:       newID(),
 		Name:     name,
 		Type:     profile.Type,
-		Answers:  strings.Join(normalizedAnswers, ""),
+		Answers:  strings.Join(normalizedAnswers, ","),
 		Duration: clampDuration(req.Duration),
 		Created:  time.Now().UTC(),
 	}
@@ -68,6 +87,14 @@ func (a *App) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, response)
+}
+
+func answerInputsToStrings(inputs []answerInput) []string {
+	answers := make([]string, len(inputs))
+	for i, answer := range inputs {
+		answers[i] = string(answer)
+	}
+	return answers
 }
 
 func validName(name string) bool {
