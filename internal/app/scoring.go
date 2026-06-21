@@ -8,14 +8,18 @@ type Question = scoring.Question
 
 var questions = scoring.Questions()
 
+func normalizeAnswers(answers []string) ([]string, error) {
+	return scoring.NormalizeAnswers(answers)
+}
+
 func normalizeSliderAnswers(answers []int) ([]int, error) {
 	return scoring.NormalizeSliderAnswers(answers)
 }
 
-func computeProfile(answers []int) (TypeProfile, error) {
-	return scoring.ComputeWeightedProfile(answers)
+func computeProfile(answers []string) (TypeProfile, error) {
+	return scoring.ComputeProfile(answers)
 }
 
-func buildProfile(normalized []int) TypeProfile {
-	return scoring.BuildWeightedProfile(normalized)
+func computeWeightedProfile(answers []int) (TypeProfile, error) {
+	return scoring.ComputeWeightedProfile(answers)
 }

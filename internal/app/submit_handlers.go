@@ -25,11 +25,13 @@ func (a *answerInput) UnmarshalJSON(data []byte) error {
 		*a = answerInput(text)
 		return nil
 	}
+
 	var value int
 	if err := json.Unmarshal(data, &value); err == nil {
 		*a = answerInput(strconv.Itoa(value))
 		return nil
 	}
+
 	return errors.New("answer must be a string or integer")
 }
 
@@ -51,18 +53,27 @@ func (a *App) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	normalizedAnswers, err := normalizeAnswers(answerInputsToStrings(req.Answers))
+	normalizedAnswerStrings, err := normalizeAnswers(answerInputsToStrings(req.Answers))
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	profile := buildProfile(normalizedAnswers)
+	normalizedAnswers, err := sliderAnswersFromStrings(normalizedAnswerStrings)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	profile, err := computeWeightedProfile(normalizedAnswers)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	result := Result{
 		ID:       newID(),
 		Name:     name,
 		Type:     profile.Type,
-		Answers:  strings.Join(normalizedAnswers, ","),
+		Answers:  strings.Join(normalizedAnswerStrings, ","),
 		Duration: clampDuration(req.Duration),
 		Created:  time.Now().UTC(),
 	}
@@ -76,7 +87,7 @@ func (a *App) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		"profile": profile,
 		"result":  result,
 	}
-	if savedResult, err := a.saveLoggedInUserResult(r, profile, normalizedAnswers, result.Duration); err != nil {
+	if savedResult, err := a.saveLoggedInUserResult(r, profile, normalizedAnswerStrings, result.Duration); err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "could not save result to account")
 		return
 	} else if savedResult != nil {
@@ -95,6 +106,18 @@ func answerInputsToStrings(inputs []answerInput) []string {
 		answers[i] = string(answer)
 	}
 	return answers
+}
+
+func sliderAnswersFromStrings(answers []string) ([]int, error) {
+	values := make([]int, len(answers))
+	for i, answer := range answers {
+		value, err := strconv.Atoi(answer)
+		if err != nil {
+			return nil, err
+		}
+		values[i] = value
+	}
+	return normalizeSliderAnswers(values)
 }
 
 func validName(name string) bool {

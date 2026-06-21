@@ -14,7 +14,7 @@ type userTestResultResponse struct {
 	ID              int64           `json:"id"`
 	MBTIType        string          `json:"mbtiType"`
 	Scores          json.RawMessage `json:"scores,omitempty"`
-	Answers         json.RawMessage `json:"answers,omitempty"`
+	Answers         []string        `json:"answers,omitempty"`
 	DurationSeconds int             `json:"durationSeconds"`
 	IsPrimary       bool            `json:"isPrimary"`
 	CreatedAt       string          `json:"createdAt"`
@@ -78,7 +78,7 @@ func (a *App) handleMyResultByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) saveLoggedInUserResult(r *http.Request, profile TypeProfile, answers []int, duration int) (*userTestResultResponse, error) {
+func (a *App) saveLoggedInUserResult(r *http.Request, profile TypeProfile, answers []string, duration int) (*userTestResultResponse, error) {
 	userID, ok := a.currentUserID(r)
 	if !ok {
 		return nil, nil
@@ -151,7 +151,7 @@ func newUserTestResultResponse(result UserTestResult) userTestResultResponse {
 		ID:              result.ID,
 		MBTIType:        result.MBTIType,
 		Scores:          rawJSONOrNil(result.ScoresJSON),
-		Answers:         rawJSONOrNil(result.AnswersJSON),
+		Answers:         answerStringsOrNil(result.AnswersJSON),
 		DurationSeconds: result.DurationSeconds,
 		IsPrimary:       result.IsPrimary,
 		CreatedAt:       result.CreatedAt.Format(time.RFC3339Nano),
@@ -172,4 +172,26 @@ func rawJSONOrNil(value string) json.RawMessage {
 		return nil
 	}
 	return json.RawMessage(value)
+}
+
+func answerStringsOrNil(value string) []string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+
+	var answers []string
+	if err := json.Unmarshal([]byte(value), &answers); err == nil {
+		return answers
+	}
+
+	var numericAnswers []int
+	if err := json.Unmarshal([]byte(value), &numericAnswers); err != nil {
+		return nil
+	}
+	answers = make([]string, len(numericAnswers))
+	for i, answer := range numericAnswers {
+		answers[i] = strconv.Itoa(answer)
+	}
+	return answers
 }

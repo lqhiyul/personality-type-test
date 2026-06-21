@@ -137,14 +137,54 @@ func ComputeProfile(answers []string) (TypeProfile, error) {
 	return BuildProfile(normalized), nil
 }
 
-func BuildProfile(normalized []string) TypeProfile {
-	score := map[string]int{"E": 0, "I": 0, "S": 0, "N": 0, "T": 0, "F": 0, "J": 0, "P": 0}
-	for i, answer := range normalized {
-		if i >= len(questions) {
-			break
+func NormalizeSliderAnswers(answers []int) ([]int, error) {
+	if len(answers) != len(questions) {
+		return nil, fmt.Errorf("expected %d answers", len(questions))
+	}
+
+	normalized := make([]int, len(answers))
+	for i, answer := range answers {
+		if answer < 0 || answer > 100 {
+			return nil, fmt.Errorf("invalid answer for question %d", i+1)
 		}
+		normalized[i] = answer
+	}
+	return normalized, nil
+}
+
+func ComputeWeightedProfile(answers []int) (TypeProfile, error) {
+	normalized, err := NormalizeSliderAnswers(answers)
+	if err != nil {
+		return TypeProfile{}, err
+	}
+	return BuildWeightedProfile(normalized), nil
+}
+
+func BuildProfile(normalized []string) TypeProfile {
+	return buildProfile(len(normalized), func(i int, question Question) (int, bool) {
+		return answerValue(normalized[i], question)
+	})
+}
+
+func BuildWeightedProfile(normalized []int) TypeProfile {
+	return buildProfile(len(normalized), func(i int, _ Question) (int, bool) {
+		value := normalized[i]
+		if value < 0 || value > 100 {
+			return 0, false
+		}
+		return value, true
+	})
+}
+
+func buildProfile(answerCount int, valueAt func(int, Question) (int, bool)) TypeProfile {
+	score := map[string]int{"E": 0, "I": 0, "S": 0, "N": 0, "T": 0, "F": 0, "J": 0, "P": 0}
+	limit := answerCount
+	if limit > len(questions) {
+		limit = len(questions)
+	}
+	for i := 0; i < limit; i++ {
 		question := questions[i]
-		value, ok := answerValue(answer, question)
+		value, ok := valueAt(i, question)
 		if !ok {
 			continue
 		}

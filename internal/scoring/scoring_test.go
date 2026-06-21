@@ -73,6 +73,31 @@ func TestWeightedSliderAnswersRespectMixedPolarity(t *testing.T) {
 	}
 }
 
+func TestComputeWeightedProfileWithSliderAnswers(t *testing.T) {
+	answers := sliderAnswersForType("ENFP")
+	profile, err := ComputeWeightedProfile(answers)
+	if err != nil {
+		t.Fatalf("ComputeWeightedProfile() error = %v", err)
+	}
+	if profile.Type != "ENFP" {
+		t.Fatalf("expected ENFP, got %q", profile.Type)
+	}
+
+	balanced := make([]int, len(Questions()))
+	for i := range balanced {
+		balanced[i] = 50
+	}
+	profile = BuildWeightedProfile(balanced)
+	if profile.Type != "ESTJ" {
+		t.Fatalf("expected tie-breaking to keep left dimension letters ESTJ, got %q", profile.Type)
+	}
+	for _, dim := range profile.Dimensions {
+		if dim.LeftScore != 400 || dim.RightScore != 400 || dim.Percent != 50 {
+			t.Fatalf("expected balanced 400/400 for %s, got %d/%d at %d%%", dim.Key, dim.LeftScore, dim.RightScore, dim.Percent)
+		}
+	}
+}
+
 func TestNormalizeAnswersRejectsBadLengthAndValues(t *testing.T) {
 	if _, err := NormalizeAnswers([]string{"I"}); err == nil {
 		t.Fatal("expected bad answer length to fail")
@@ -86,6 +111,34 @@ func TestNormalizeAnswersRejectsBadLengthAndValues(t *testing.T) {
 	answers[0] = "101"
 	if _, err := NormalizeAnswers(answers); err == nil {
 		t.Fatal("expected out-of-range slider value to fail")
+	}
+}
+
+func TestNormalizeSliderAnswersRejectsBadLengthAndValues(t *testing.T) {
+	if _, err := NormalizeSliderAnswers([]int{50}); err == nil {
+		t.Fatal("expected bad answer length to fail")
+	}
+	answers := sliderAnswersForType("INTJ")
+	answers[0] = -1
+	if _, err := NormalizeSliderAnswers(answers); err == nil {
+		t.Fatal("expected negative slider value to fail")
+	}
+	answers = sliderAnswersForType("INTJ")
+	answers[0] = 101
+	if _, err := NormalizeSliderAnswers(answers); err == nil {
+		t.Fatal("expected out-of-range slider value to fail")
+	}
+}
+
+func TestNormalizeSliderAnswersReturnsCopy(t *testing.T) {
+	answers := sliderAnswersForType("INTJ")
+	normalized, err := NormalizeSliderAnswers(answers)
+	if err != nil {
+		t.Fatalf("NormalizeSliderAnswers() error = %v", err)
+	}
+	answers[0] = 50
+	if normalized[0] == answers[0] {
+		t.Fatal("expected NormalizeSliderAnswers to return a defensive copy")
 	}
 }
 
@@ -109,6 +162,19 @@ func answersForType(code string) []string {
 			continue
 		}
 		answers[i] = question.B
+	}
+	return answers
+}
+
+func sliderAnswersForType(code string) []int {
+	questions := Questions()
+	answers := make([]int, len(questions))
+	for i, question := range questions {
+		if strings.Contains(code, question.A) {
+			answers[i] = 0
+			continue
+		}
+		answers[i] = 100
 	}
 	return answers
 }
