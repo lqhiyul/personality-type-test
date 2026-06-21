@@ -122,21 +122,59 @@ function translateDimension(dim) {
   };
 }
 
+function dimensionLeftPercent(dim) {
+  if (Number.isFinite(Number(dim?.leftPercent))) return Number(dim.leftPercent);
+  const left = Number(dim?.leftScore || 0);
+  const right = Number(dim?.rightScore || 0);
+  const total = left + right;
+  return total > 0 ? Math.round((left / total) * 100) : 0;
+}
+
+function dimensionRightPercent(dim) {
+  if (Number.isFinite(Number(dim?.rightPercent))) return Number(dim.rightPercent);
+  const left = Number(dim?.leftScore || 0);
+  const right = Number(dim?.rightScore || 0);
+  const total = left + right;
+  return total > 0 ? Math.round((right / total) * 100) : 0;
+}
+
+function dimensionBalanceText(dim, labels) {
+  const margin = dimensionMargin(dim);
+  if ((dim?.balanceLevel || "") === "balanced" || margin <= 5) {
+    return t("ui.slider.balanced", "Balanced");
+  }
+  const target = dim?.winner === dim?.leftCode ? labels.leftLabel : labels.rightLabel;
+  const level = dim?.balanceLevel || (margin <= 15 ? "slight" : (margin <= 30 ? "moderate" : "strong"));
+  const key = `${level}Lean`;
+  const fallback = {
+    slightLean: "Slight lean toward: {label}",
+    moderateLean: "Moderate lean toward: {label}",
+    strongLean: "Strong lean toward: {label}",
+  }[key] || "Lean toward: {label}";
+  return t(`ui.slider.${key}`, fallback, { label: target });
+}
+
 function renderDimensionBreakdown(profile) {
   const dimensions = profile?.dimensions || [];
   if (!dimensions.length) return "";
   return `<div class="result-breakdown"><h3>${esc(t("ui.result.breakdownTitle", t("ui.result.why")))}</h3><div class="dimension-grid">${dimensions.map((dim) => {
     const labels = translateDimension(dim);
-    const width = Math.max(0, Math.min(100, dim.percent || 0));
+    const leftPercent = Math.max(0, Math.min(100, dimensionLeftPercent(dim)));
+    const rightPercent = Math.max(0, Math.min(100, dimensionRightPercent(dim)));
     return `<div class="dimension-card">
       <div class="dimension-card__top"><span>${esc(labels.label)}</span><strong>${esc(dim.winner)} - ${esc(labels.winnerLabel)}</strong></div>
-      <div class="dimension-bar" aria-hidden="true"><span style="width:${width}%"></span></div>
-      <div class="dimension-card__bottom"><span>${esc(dim.leftCode)} ${dim.leftScore}</span><span>${esc(dim.rightCode)} ${dim.rightScore}</span></div>
+      <div class="dimension-bar dimension-bar--split" aria-hidden="true"><span class="dimension-bar__left" style="width:${leftPercent}%"></span><span class="dimension-bar__right" style="width:${rightPercent}%"></span></div>
+      <div class="dimension-card__bottom"><span>${esc(labels.leftLabel)} ${leftPercent}%</span><span>${esc(labels.rightLabel)} ${rightPercent}%</span></div>
+      <div class="dimension-card__lean">${esc(dimensionBalanceText(dim, labels))}</div>
     </div>`;
   }).join("")}</div></div>`;
 }
 
 function dimensionMargin(dim) {
+  if (Number.isFinite(Number(dim?.margin))) return Math.abs(Number(dim.margin));
+  if (dim?.leftPercent !== undefined || dim?.rightPercent !== undefined) {
+    return Math.abs(dimensionLeftPercent(dim) - dimensionRightPercent(dim));
+  }
   return Math.abs(Number(dim?.leftScore || 0) - Number(dim?.rightScore || 0));
 }
 
@@ -152,8 +190,8 @@ function resultConfidence(profile) {
   const dimensions = profile?.dimensions || [];
   if (!dimensions.length) return null;
   const margins = dimensions.map(dimensionMargin);
-  const closeCount = margins.filter((margin) => margin <= 1).length;
-  const softCount = margins.filter((margin) => margin <= 3).length;
+  const closeCount = margins.filter((margin) => margin <= 5).length;
+  const softCount = margins.filter((margin) => margin <= 15).length;
   const level = closeCount >= 2 ? "close" : (closeCount === 1 || softCount >= 3 ? "medium" : "high");
   return { level, nearest: nearestDimension(profile) };
 }
@@ -170,9 +208,9 @@ function renderResultConfidence(profile) {
     ? template(copy.closest || "", {
         axis: `${nearest.leftCode}/${nearest.rightCode}`,
         left: nearest.leftCode,
-        leftScore: nearest.leftScore,
+        leftScore: `${dimensionLeftPercent(nearest)}%`,
         right: nearest.rightCode,
-        rightScore: nearest.rightScore,
+        rightScore: `${dimensionRightPercent(nearest)}%`,
       })
     : "";
   return `<section class="result-confidence result-confidence--${esc(confidence.level)}">
@@ -199,7 +237,7 @@ function renderWhyThisType(profile) {
         <strong>${esc(dim.winner)} - ${esc(winnerLabel)}</strong>
       </div>
       <p>${esc(axisText)}</p>
-      <div class="axis-explanation-card__score">${esc(dim.leftCode)} ${esc(dim.leftScore)} / ${esc(dim.rightCode)} ${esc(dim.rightScore)}</div>
+      <div class="axis-explanation-card__score">${esc(dim.leftCode)} ${esc(dimensionLeftPercent(dim))}% / ${esc(dim.rightCode)} ${esc(dimensionRightPercent(dim))}%</div>
     </article>`;
   }).join("");
   return `<section class="result-why-type">

@@ -102,7 +102,7 @@
       },
       why: {
         title: "Why this type",
-        intro: "The type comes from four small leanings in your answers. This shows which side of each scale appeared more often.",
+        intro: "The type comes from weighted slider percentages across four scales. This shows how strongly each side landed, including near-balanced dimensions.",
         axis: {
           E: "Your answers lean toward outer exchange: testing thoughts through conversation, action, or live contact.",
           I: "Your answers lean toward internal processing: forming the thought first, then speaking or acting.",

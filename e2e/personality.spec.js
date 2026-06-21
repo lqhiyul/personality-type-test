@@ -4,7 +4,10 @@ async function answerAllFirstOptions(page) {
   await page.locator("[data-question]").first().waitFor();
   await page.locator("[data-question]").evaluateAll((questions) => {
     for (const question of questions) {
-      question.querySelector(".option")?.click();
+      const input = question.querySelector(".slider-input");
+      if (!input) continue;
+      input.value = "0";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
     }
   });
 }
@@ -23,7 +26,28 @@ test("quiz can be completed and shows a result", async ({ page }) => {
   await answerAllFirstOptions(page);
   await page.locator("#submitBtn").click();
   await expect(page.locator("#resultBox")).toBeVisible();
+  await expect(page.locator(".dimension-card").first()).toContainText("%");
   await expect(page.locator("#resultBox")).toContainText(/E|I/);
+});
+
+test("slider answers track progress and require intentional center confirmation", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("#personName").fill("Slider Tester");
+  await expect(page.locator("#doneCount")).toHaveText("0");
+  await page.locator('[data-question="0"] .slider-confirm-center').click();
+  await expect(page.locator("#doneCount")).toHaveText("1");
+  await expect(page.locator('[data-question="0"] .slider-balance')).toBeVisible();
+  await page.locator("#submitBtn").click();
+  await expect(page.locator("#resultBox")).toHaveClass(/hidden/);
+});
+
+test("slider supports keyboard interaction", async ({ page }) => {
+  await page.goto("/");
+  const firstSlider = page.locator('[data-question="0"] .slider-input');
+  await firstSlider.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator("#doneCount")).toHaveText("1");
+  await expect(firstSlider).not.toHaveValue("50");
 });
 
 test("types and compatibility sections work", async ({ page }) => {

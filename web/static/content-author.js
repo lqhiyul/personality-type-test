@@ -160,6 +160,7 @@
       heroCompatibility: { eyebrow: "Динаміка взаємодії", title: "Сумісність типів", copy: "Порівняйте два типи в дружбі, стосунках або роботі. Це не прогноз і не вирок, а спокійна гіпотеза про те, як може складатися взаємодія." },
       admin: { closeAccess: "Закрити admin menu", accessTitle: "Admin tools", accessHint: "Demo, перевірка результату й локальні експорти.", accessOpen: "Відкрити панель" },
       result: { breakdownTitle: "Як склалися шкали", manifestTitle: "Як це проявляється", compare: "Порівняти мій тип з іншим" },
+      slider: { balanced: "Баланс", almostBalanced: "Майже баланс", slightLean: "Легкий нахил до: {label}", moderateLean: "Помірний нахил до: {label}", strongLean: "Сильний нахил до: {label}", slightLeft: "Легкий нахил ліворуч", slightRight: "Легкий нахил праворуч", moderateLeft: "Помірний нахил ліворуч", moderateRight: "Помірний нахил праворуч", strongLeft: "Сильний нахил ліворуч", strongRight: "Сильний нахил праворуч", keepCenter: "Залишити 50/50", leftSide: "Ліворуч", rightSide: "Праворуч", unanswered: "Посуньте повзунок або залиште 50/50", validation: "Позначте відповідь на кожне питання: посуньте повзунок або підтвердьте 50/50.", ariaLabel: "Питання {number}: оберіть між {leftLabel} і {rightLabel}", ariaValue: "{leftPercent}% до {leftLabel}, {rightPercent}% до {rightLabel}. {balance}" },
       shareCard: { hint: "Картка готова. Можна поділитися, скопіювати посилання або завантажити PNG.", copyLink: "Скопіювати посилання", linkCopied: "Посилання скопійовано." },
       compatibility: {
         toolsLabel: "Порівняння",
@@ -188,6 +189,7 @@
       heroCompatibility: { eyebrow: "Динамика взаимодействия", title: "Совместимость типов", copy: "Сравните два типа в дружбе, отношениях или работе. Это не прогноз и не приговор, а спокойная гипотеза о том, как может складываться взаимодействие." },
       admin: { closeAccess: "Закрыть admin menu", accessTitle: "Admin tools", accessHint: "Demo, проверка результата и локальные экспорты.", accessOpen: "Открыть панель" },
       result: { breakdownTitle: "Как сложились шкалы", manifestTitle: "Как это проявляется", compare: "Сравнить мой тип с другим" },
+      slider: { balanced: "Баланс", almostBalanced: "Почти баланс", slightLean: "Легкий уклон к: {label}", moderateLean: "Умеренный уклон к: {label}", strongLean: "Сильный уклон к: {label}", slightLeft: "Легкий уклон влево", slightRight: "Легкий уклон вправо", moderateLeft: "Умеренный уклон влево", moderateRight: "Умеренный уклон вправо", strongLeft: "Сильный уклон влево", strongRight: "Сильный уклон вправо", keepCenter: "Оставить 50/50", leftSide: "Слева", rightSide: "Справа", unanswered: "Передвиньте ползунок или оставьте 50/50", validation: "Отметьте ответ на каждый вопрос: передвиньте ползунок или подтвердите 50/50.", ariaLabel: "Вопрос {number}: выберите между {leftLabel} и {rightLabel}", ariaValue: "{leftPercent}% к {leftLabel}, {rightPercent}% к {rightLabel}. {balance}" },
       shareCard: { hint: "Карточка готова. Можно поделиться, скопировать ссылку или скачать PNG.", copyLink: "Скопировать ссылку", linkCopied: "Ссылка скопирована." },
       compatibility: {
         toolsLabel: "Сравнение",
@@ -216,6 +218,7 @@
       heroCompatibility: { eyebrow: "Interaction dynamics", title: "Type Compatibility", copy: "Compare two types in friendship, relationships, or work. This is not a prediction or verdict, just a calm hypothesis about interaction dynamics." },
       admin: { closeAccess: "Close admin menu", accessTitle: "Admin tools", accessHint: "Demo run, result QA, and local exports.", accessOpen: "Open panel" },
       result: { breakdownTitle: "How the scales landed", manifestTitle: "How it shows up", compare: "Compare my type with another" },
+      slider: { balanced: "Balanced", almostBalanced: "Almost balanced", slightLean: "Slight lean toward: {label}", moderateLean: "Moderate lean toward: {label}", strongLean: "Strong lean toward: {label}", slightLeft: "Slight lean left", slightRight: "Slight lean right", moderateLeft: "Moderate lean left", moderateRight: "Moderate lean right", strongLeft: "Strong lean left", strongRight: "Strong lean right", keepCenter: "Keep 50/50", leftSide: "Left", rightSide: "Right", unanswered: "Move the slider or keep 50/50", validation: "Answer every question by moving the slider or confirming 50/50.", ariaLabel: "Question {number}: choose between {leftLabel} and {rightLabel}", ariaValue: "{leftPercent}% toward {leftLabel}, {rightPercent}% toward {rightLabel}. {balance}" },
       shareCard: { hint: "The card is ready. Share it, copy the link, or download the PNG.", copyLink: "Copy link", linkCopied: "Link copied." },
       compatibility: {
         toolsLabel: "Comparison",
